@@ -34,12 +34,12 @@ void DiffDriveController::commandTimeoutHandler() {
 	while (ros::ok()) {
 		ptime currentTime = microsec_clock::local_time();
 		time_duration duration = currentTime - timeLastCommandReceived_;
-		ROS_INFO_STREAM("commandTimeoutHandler loop"
-			<< ", last command @: " << to_simple_string(timeLastCommandReceived_)
-			<< ", duration: " << to_simple_string(duration));
+		// ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] loop"
+		// 	<< ", last command @: " << to_simple_string(timeLastCommandReceived_)
+		// 	<< ", duration: " << to_simple_string(duration));
 
-		if (duration > milliseconds(500000)) {
-			ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
+		if (duration.total_milliseconds() > 500) {
+			//ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
 			stop();
 		}
 
@@ -57,7 +57,7 @@ void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMess
 			command.linear = commandMessage.linear.x;
 			command.timeNsec = microsec_clock::local_time();
 			//ROS_DEBUG_STREAM_NAMED(debugStreamName_,
-			ROS_INFO_STREAM("New Command"
+			ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] New Command"
 				<< ", linear: " << command.linear
 				<< ", angular: " << command.angular
 				<< ", timeNsec: " << to_simple_string(command.timeNsec));
@@ -80,7 +80,7 @@ void DiffDriveController::commandExecutionDoWork() {
 			if (!commandQueue_.empty()) {
 				Command command;
 				if (commandQueue_.pop(command)) {
-					ROS_INFO_STREAM("DiffDriveController::commandExecutionDoWork] deque command. "
+					ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] deque command. "
 						<< "linear: " << command.linear
 						<< ", angular: " << command.angular
 						<< ", timeNsec: " << to_simple_string(command.timeNsec));
