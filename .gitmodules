@@ -1,17 +1,4 @@
-[submodule "src/farryn_controller"]
-	path = src/farryn_controller
-	url = https://github.com/mwimble/Farryn.git
-	ignore = dirty
-[submodule "src/razor_imu_9dof"]
-	path = src/razor_imu_9dof
-	url = https://github.com/KristofRobot/razor_imu_9dof.git
-        ignore = dirty
 [submodule "src/rbx1"]
 	path = src/rbx1
 	url = https://github.com/pirobot/rbx1.git
         ignore = dirty
-[submodule "src/teleop_twist_keyboard"]
-	path = src/teleop_twist_keyboard
-	url = https://github.com/ros-teleop/teleop_twist_keyboard.git
-        ignore = dirty
-
