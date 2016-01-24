@@ -1,0 +1,12 @@
+*~
+
+.AppleDouble/
+.DS_Store
+.catkin_workspace
+
+build/
+devel/
+frames.gv
+frames.pdf
+square.bag
+
