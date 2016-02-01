@@ -1,5 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
+#include <stdlib.h>
+#include <time.h>
 
 
 int main(int argc, char** argv) {
@@ -13,12 +15,18 @@ int main(int argc, char** argv) {
 	int count = 0;
 	ros::Rate r(1);
 	while (ros::ok()) {
-		ROS_INFO("Loop count: %d", ++count);
+		ros::spinOnce();
+		int eighthSecs = (rand() % 8) + 1;
+		ROS_INFO("Loop count: %d, 1/8 secs: %d", count, eighthSecs);
 		geometry_msgs::Twist twistMsg;
-		twistMsg.linear.x = 1.0;
-		twistMsg.angular.z = 5.0;
+		twistMsg.linear.x = 1.2;
+		twistMsg.linear.y = count++;
+		twistMsg.angular.z = eighthSecs;
 		twistPublisher.publish(twistMsg);
-		//ros::spinOnce();
-		r.sleep();
+		//r.sleep();
+		timespec t;
+		t.tv_sec = eighthSecs / 8;
+		t.tv_nsec = 125000000 * (eighthSecs % 8);
+		nanosleep(&t, NULL);
 	}
 }
