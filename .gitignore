@@ -12,3 +12,10 @@ frames.gv
 frames.pdf
 square.bag
 
+ar_track_alvar/
+src/geometry/
+src/image_pipeline/
+src/raspicam_node/
+src/resource_retriever/
+src/rosberrypi_cam
+src/rosserial/
