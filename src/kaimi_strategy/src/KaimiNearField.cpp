@@ -1,8 +1,9 @@
 // TODO
-// Make singleton.
+// Timeout message to indicate not found.
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <pthread.h>
 #include <std_msgs/String.h>
 #include <sstream>
 #include <stdio.h>
@@ -11,7 +12,25 @@
 
 #include "KaimiNearField.h"
 
-extern KaimiNearField* findObject;
+boost::asio::io_service kaimiNearFieldIoService_;
+boost::asio::deadline_timer kaimiNearFieldDeadlineTimer_(kaimiNearFieldIoService_, boost::posix_time::milliseconds(500));
+
+static void * FindObjectTimerRoutine(const boost::system::error_code& /*e*/) {
+	ptime now = microsec_clock::local_time();
+	time_duration timeSinceLastFound = now - KaimiNearField::Singleton()->lastTimeFound();
+	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
+	if (millisecondsSinceLastReport > 500) {
+		KaimiNearField::Singleton()->setNotFound();
+	}
+
+	kaimiNearFieldDeadlineTimer_.expires_at(kaimiNearFieldDeadlineTimer_.expires_at() + milliseconds(500));
+	kaimiNearFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
+}
+
+void* heartBeatFunction(void* singleton) {
+    kaimiNearFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
+    kaimiNearFieldIoService_.run();
+}
 
 // void FindObject::configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level) {
 // 	ROS_INFO("Reconfigure Request hue_low: %d, hue_high: %d, saturation_low: %d, saturation high: %d, value_low: %d, value_high: %d, contourSizeThreshold: %d",
@@ -32,20 +51,17 @@ extern KaimiNearField* findObject;
 // }
 
 void KaimiNearField::topicCb(const std_msgs::String& msg) {
-	ROS_INFO("KaimiNearField::topicCb, message: %s", msg.data.c_str());
+	// NearCamera:Found;LEFT-RIGHT:LR OK;FRONT-BACK:VERY NEAR;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
+	//ROS_INFO("KaimiNearField::topicCb, message: %s", msg.data.c_str());
 	
-	LeftRight leftRight;
-
 	char localStr[strlen(msg.data.c_str()) + 1];
 	strcpy(localStr, msg.data.c_str());
-	ROS_INFO("KaimiNearField::topicCb localStr: %s", localStr);
 
 	char* keyValPtr = strtok(localStr, ";");
 	while (keyValPtr != NULL) {
 		// Found key/value pair.
 		char keyValue[strlen(keyValPtr) + 1];
 		strcpy(keyValue, keyValPtr);
-		ROS_INFO("...keyValue: %s", keyValue);
 
 		char* keyPtr = keyValue;
 		while ((*keyPtr) && (*keyPtr != ':')) keyPtr++;
@@ -54,15 +70,70 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 			char key[keyPtr - keyValue];
 			keyPtr++;
 			strcpy(key, keyValue);
-			ROS_INFO("... key: %s", key);
 			char* value = keyPtr;
-			ROS_INFO("... value: %s", value);
+			if (strcmp(key, "LEFT-RIGHT") == 0) {
+				if (strcmp(value, "FAR LEFT") == 0) {
+					leftRight_ = FAR_LEFT;
+				} else if (strcmp(value, "LEFT") == 0) {
+					leftRight_ = LEFT;
+				} else if (strcmp(value, "LR OK") == 0) {
+					leftRight_ = CENTER;
+				} else if (strcmp(value, "RIGHT") == 0) {
+					leftRight_ = RIGHT;
+				} else if (strcmp(value, "FAR_RIGHT") == 0) {
+					leftRight_ = FAR_RIGHT;
+				} else {
+					leftRight_ = CENTER;
+				}
+			} else if (strcmp(key, "FRONT-BACK") == 0) {
+				if (strcmp(value, "VERY FAR AWAY") == 0) {
+					farNear_ = VERY_FAR_AWAY;
+				} else if (strcmp(value, "FAR AWAY") == 0) {
+					farNear_ = FAR_AWAY;
+				} else if (strcmp(value, "NEAR") == 0) {
+					farNear_ = NEAR;
+				} else if (strcmp(value, "VERY NEAR") == 0) {
+					farNear_ = VERY_NEAR;
+				} else {
+					farNear_ = VERY_NEAR;
+				}
+			} else if (strcmp(key, "NearCamera") == 0) {
+				if (strcmp(value, "Found") == 0) {
+					found_ = true;
+					lastNearFieldReport_ = microsec_clock::local_time();
+				} else {
+					found_ = false;
+				}
+			} else if (strcmp(key, "AREA") == 0) {
+				area_ = atof(value);
+			} else if (strcmp(key, "X") == 0) {
+				x_ = atof(value);
+			} else if (strcmp(key, "Y") == 0) {
+				y_ = atof(value);
+			} else if (strcmp(key, "COLS") == 0) {
+				cols_ = atol(value);
+			} else if (strcmp(key, "ROWS") == 0) {
+				rows_ = atol(value);
+			}
 		} else {
 			ROS_INFO("!!! missing value");
 		}
 
 		keyValPtr = strtok(NULL, ";");
 	}
+
+	ROS_INFO("NearField found: %i, area: %f, cols: %d, farNear: %i, leftRight: %i, rows: %d, x: %f, y: %f", found_, area_, cols_, farNear_, leftRight_, rows_, x_, y_);
+}
+
+KaimiNearField::KaimiNearField() {
+	area_ = 0.0;
+	cols_ = 0;
+	found_ = false;
+	farNear_ = VERY_NEAR;
+	leftRight_ = CENTER;
+	rows_ = 0;
+	x_ = 0.0;
+	y_ = 0.0;
 }
 
 
@@ -72,9 +143,11 @@ KaimiNearField* KaimiNearField::Singleton() {
 		ros::param::param<std::string>("nearfield_topic_name", singleton->nearfieldTopicName_, "/nearSampleFound");
 		ROS_INFO("PARAM nearfield_topic_name: %s", singleton->nearfieldTopicName_.c_str());
 		singleton->nearfield_sub_ = singleton->nh_.subscribe(singleton->nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, singleton);
+
+		pthread_t thread;
+		int rc = pthread_create(&thread, NULL, heartBeatFunction, singleton);
 	}
 }
 
-KaimiNearField::LeftRight KaimiNearField::leftRight_ = CENTER;
 KaimiNearField* KaimiNearField::singleton = NULL;
 
