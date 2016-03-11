@@ -3,11 +3,11 @@
 
 #include "KaimiNearField.h"
 
-KaimiNearField* kaimiNearField;
+KaimiNearField* kaimiNearField = NULL;
 
 int main(int argc, char** argv) {
 	ros::init(argc, argv, "kinect_strategy_node");
-	kaimiNearField = new KaimiNearField();
+	kaimiNearField = KaimiNearField::Singleton();
 	ros::spin();
 	return 0;
 }

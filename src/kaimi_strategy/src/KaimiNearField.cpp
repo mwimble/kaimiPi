@@ -66,8 +66,15 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 }
 
 
-KaimiNearField::KaimiNearField() {
-	ros::param::param<std::string>("nearfield_topic_name", nearfieldTopicName_, "/nearSampleFound");
-	ROS_INFO("PARAM nearfield_topic_name: %s", nearfieldTopicName_.c_str());
-	nearfield_sub_ = nh_.subscribe(nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, this);
+KaimiNearField* KaimiNearField::Singleton() {
+	if (singleton == NULL) {
+		singleton = new KaimiNearField();
+		ros::param::param<std::string>("nearfield_topic_name", singleton->nearfieldTopicName_, "/nearSampleFound");
+		ROS_INFO("PARAM nearfield_topic_name: %s", singleton->nearfieldTopicName_.c_str());
+		singleton->nearfield_sub_ = singleton->nh_.subscribe(singleton->nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, singleton);
+	}
 }
+
+KaimiNearField::LeftRight KaimiNearField::leftRight_ = CENTER;
+KaimiNearField* KaimiNearField::singleton = NULL;
+

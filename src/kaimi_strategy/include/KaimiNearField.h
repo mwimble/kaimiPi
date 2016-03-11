@@ -11,6 +11,17 @@
 using namespace std;
 
 class KaimiNearField {
+public:
+	enum LeftRight {
+		FAR_LEFT,
+		LEFT,
+		CENTER,
+		RIGHT,
+		FAR_RIGHT,
+	};
+
+	static KaimiNearField* Singleton();
+
 private:
 
 	ros::NodeHandle nh_;
@@ -24,15 +35,11 @@ private:
 
 	// static void configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level);
 
+	KaimiNearField() {};
+	KaimiNearField(KaimiNearField const&) {};
+	KaimiNearField& operator=(KaimiNearField const&) {};
+	static KaimiNearField* singleton;
 
-public:
-	enum LeftRight {
-		FAR_LEFT,
-		LEFT,
-		CENTER,
-		RIGHT,
-		FAR_RIGHT,
-	};
+	static LeftRight leftRight_;
 
-	KaimiNearField();
 };

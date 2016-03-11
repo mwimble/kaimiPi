@@ -1,0 +1,23 @@
+<launch>
+	<machine name="jetsonEth"
+		address="10.10.10.2"
+		user="ubuntu"
+		env-loader="/home/ubuntu/catkin_ws/env.sh"
+        ssh-port="22"
+        timeout="20">
+    </machine>
+	
+	<node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" respawn="true" output="screen" >
+	</node>
+
+	<!--node machine="jetsonEth" pkg="freenect_launch" name="freenect_launch" type="freenect.remote.launch" /-->
+
+    <include
+	     file="$(find kaimi_strategy)launch/freenect.launch.xml">
+      <arg name="machine" value="jetsonEth" />
+	</include>
+
+	<node machine="jetsonEth" pkg="kaimi_near_camera" name="kaimi_near_camera" type="kaimi_near_camera_node" respawn="true"	>
+	</node>
+
+</launch>
