@@ -18,6 +18,7 @@
 	</include>
 
 	<node machine="jetsonEth" pkg="kaimi_near_camera" name="kaimi_near_camera" type="kaimi_near_camera_node" respawn="true"	>
+		<param name="show_windows" value="false" />
 	</node>
 
 </launch>
