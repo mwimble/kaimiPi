@@ -6,6 +6,7 @@
 using namespace boost::posix_time;
 
 DiffDriveController::DiffDriveController() :
+	commandIsExecuting(false),
 	timeLastCommandReceived_(microsec_clock::local_time()) {
 	debugStreamName_ = "DiffDriveController";
 	
@@ -13,6 +14,11 @@ DiffDriveController::DiffDriveController() :
 	pinMode(PAUSE_PIN, INPUT);
 	fbHandle_ = wiringPiI2CSetup(MCP4725_FB_ADDR);
 	lrHandle_ = wiringPiI2CSetup(MCP4725_LR_ADDR);
+
+	// Set up default EEPROM values in both DACs so that when the system
+	// powers up, the motors are still.
+	setVoltage(fbHandle_, STOP_VALUE, true);
+	setVoltage(lrHandle_, STOP_VALUE, true);
 	
 	sub_command_ = nh_.subscribe("cmd_vel", 1, &DiffDriveController::cmdVelCallback, this);
 	commandTimeoutThread = new boost::thread(boost::bind(&DiffDriveController::commandTimeoutHandler, this));
@@ -32,7 +38,12 @@ void DiffDriveController::commandTimeoutHandler() {
 			<< ", last command @: " << to_simple_string(timeLastCommandReceived_)
 			<< ", duration: " << to_simple_string(duration));
 
-		usleep(500000);
+		if (duration > milliseconds(500000)) {
+			ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
+			stop();
+		}
+
+		usleep(100000);
 	}
 }
 
@@ -73,6 +84,47 @@ void DiffDriveController::commandExecutionDoWork() {
 						<< "linear: " << command.linear
 						<< ", angular: " << command.angular
 						<< ", timeNsec: " << to_simple_string(command.timeNsec));
+					float ws = WHEEL_SEPARATION * WHEEL_SEPARATION_MULTIPLIER;
+					float wr = WHEEL_RADIUS * WHEEL_RADIUS_MULTIPLIER;
+
+					bool truncatedX = false;
+					bool truncatedZ = false;
+					if (command.linear > 1.0) {
+						truncatedX = true;
+						command.linear = 1.0;
+					} else if (command.linear < -1.0) {
+						truncatedX = true;
+						command.linear = -1.0;
+					}
+
+					if (command.angular > 1.0) {
+						truncatedZ = true;
+						command.angular = 1.0;
+					} else if (command.angular < -1.0) {
+						truncatedZ = true;
+						command.angular = -1.0;
+					}
+
+					// Note, DAC ranges should be in:
+					// Full backwards/left = 0.96v => 806 value
+					// Full forwards/right => 3.96v => 3192
+
+					float lr =  ((-command.angular * 1228) + 2034);
+					float fb = ((command.linear * 1228) + 2034);
+
+					ROS_INFO_STREAM(
+						"[DiffDriveController::commandExecutionDoWork] "
+						<< to_simple_string(command.timeNsec)
+						<< ", linear: " << command.linear << (truncatedX ? "*T*" : "")
+						<< ", angular: " << command.angular << (truncatedZ ? "*T*" : "")
+						<< ", lr: " << lr
+						<< ", fb: " << fb);
+					setVoltage(fbHandle_, fb, false);
+					setVoltage(lrHandle_, lr, false);
+
+					stateLock_.lock();
+					commandIsExecuting = true;
+					stateLock_.unlock();
 				} else {
 					ROS_ERROR("UNEXPECTED POP FAILURE");
 				}
@@ -110,4 +162,17 @@ void DiffDriveController::setVoltage(int fd, int voltage, int persist) {
 	// this ensures the data stream is as the MCP4725 expects
 	wiringPiI2CWriteReg8(fd, data[0], data[1]);
 }
+
+void DiffDriveController::stop() {
+	setVoltage(fbHandle_, STOP_VALUE, false);
+	setVoltage(lrHandle_, STOP_VALUE, false);
+	stateLock_.lock();
+	commandIsExecuting = false;
+	stateLock_.unlock();
+}
+
+float DiffDriveController::WHEEL_SEPARATION = 0.5715; // 22.5"
+float DiffDriveController::WHEEL_RADIUS = 0.1651; // 6.5"
+float DiffDriveController::WHEEL_SEPARATION_MULTIPLIER = 1.0;
+float DiffDriveController::WHEEL_RADIUS_MULTIPLIER = 1.0;
 

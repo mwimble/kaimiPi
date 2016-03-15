@@ -26,6 +26,11 @@ private:
 	static const int MCP4726_CMD_WRITEDACEEPROM = (0x60);  // Writes data to the DAC and the EEPROM (persisting the assigned value after reset)
 	static const unsigned int STOP_VALUE = 2048;
 
+	static float WHEEL_SEPARATION;
+    static float WHEEL_RADIUS;
+    static float WHEEL_SEPARATION_MULTIPLIER;
+    static float WHEEL_RADIUS_MULTIPLIER;
+ 
 	int fbHandle_; // I2C handle for front/back DAC.
 	int lrHandle_; // I2C handle for left/right DAC.
 	
@@ -41,6 +46,7 @@ private:
     };
 
     boost::lockfree::queue<struct Command, boost::lockfree::capacity<50> > commandQueue_;
+    boost::mutex stateLock_;
 
     ptime timeLastCommandReceived_;
 
@@ -67,10 +73,16 @@ private:
 	DiffDriveController(DiffDriveController const&) {};
 	DiffDriveController& operator=(DiffDriveController const&) {};
 
+	bool commandIsExecuting;
+
 public:
 	static DiffDriveController& Singleton();
 
+	// Is the pause switch in effect?
 	bool paused();
+
+	// Stop motors.
+	void stop();
 	
 };
 
