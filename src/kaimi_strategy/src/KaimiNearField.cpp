@@ -17,10 +17,10 @@ boost::asio::deadline_timer kaimiNearFieldDeadlineTimer_(kaimiNearFieldIoService
 
 static void * FindObjectTimerRoutine(const boost::system::error_code& /*e*/) {
 	ptime now = microsec_clock::local_time();
-	time_duration timeSinceLastFound = now - KaimiNearField::Singleton()->lastTimeFound();
+	time_duration timeSinceLastFound = now - KaimiNearField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
 	if (millisecondsSinceLastReport > 500) {
-		KaimiNearField::Singleton()->setNotFound();
+		KaimiNearField::Singleton().setNotFound();
 	}
 
 	kaimiNearFieldDeadlineTimer_.expires_at(kaimiNearFieldDeadlineTimer_.expires_at() + milliseconds(500));
@@ -54,6 +54,7 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 	// NearCamera:Found;LEFT-RIGHT:LR OK;FRONT-BACK:VERY NEAR;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
 	//ROS_INFO("KaimiNearField::topicCb, message: %s", msg.data.c_str());
 	
+	setNotFound();
 	char localStr[strlen(msg.data.c_str()) + 1];
 	strcpy(localStr, msg.data.c_str());
 
@@ -122,10 +123,17 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 		keyValPtr = strtok(NULL, ";");
 	}
 
-	ROS_INFO("NearField found: %i, area: %f, cols: %d, farNear: %i, leftRight: %i, rows: %d, x: %f, y: %f", found_, area_, cols_, farNear_, leftRight_, rows_, x_, y_);
+	ROS_INFO("[KaimiNearField::topicCb] %i, area: %f, cols: %d, farNear: %i, leftRight: %i, rows: %d, x: %f, y: %f", found_, area_, cols_, farNear_, leftRight_, rows_, x_, y_);
 }
 
 KaimiNearField::KaimiNearField() {
+	ros::param::param<std::string>("nearfield_topic_name", nearfieldTopicName_, "/nearSampleFound");
+	ROS_INFO("PARAM nearfield_topic_name: %s", nearfieldTopicName_.c_str());
+	nearfield_sub_ = nh_.subscribe(nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, this);
+
+	pthread_t thread;
+	int rc = pthread_create(&thread, NULL, heartBeatFunction, this);
+
 	area_ = 0.0;
 	cols_ = 0;
 	found_ = false;
@@ -137,17 +145,9 @@ KaimiNearField::KaimiNearField() {
 }
 
 
-KaimiNearField* KaimiNearField::Singleton() {
-	if (singleton == NULL) {
-		singleton = new KaimiNearField();
-		ros::param::param<std::string>("nearfield_topic_name", singleton->nearfieldTopicName_, "/nearSampleFound");
-		ROS_INFO("PARAM nearfield_topic_name: %s", singleton->nearfieldTopicName_.c_str());
-		singleton->nearfield_sub_ = singleton->nh_.subscribe(singleton->nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, singleton);
-
-		pthread_t thread;
-		int rc = pthread_create(&thread, NULL, heartBeatFunction, singleton);
-	}
+KaimiNearField& KaimiNearField::Singleton() {
+	static KaimiNearField singleton_;
+	return singleton_;
 }
 
-KaimiNearField* KaimiNearField::singleton = NULL;
 

@@ -31,7 +31,7 @@ public:
 		VERY_NEAR
 	};
 
-	static KaimiNearField* Singleton();
+	static KaimiNearField& Singleton();
 
 	double area() { return area_; }
 
@@ -71,7 +71,6 @@ private:
 	KaimiNearField();
 	KaimiNearField(KaimiNearField const&) {};
 	KaimiNearField& operator=(KaimiNearField const&) {};
-	static KaimiNearField* singleton;
 
 	double area_;
 	int cols_;
