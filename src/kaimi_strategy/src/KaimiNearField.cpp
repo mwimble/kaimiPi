@@ -20,6 +20,7 @@ static void * FindObjectTimerRoutine(const boost::system::error_code& /*e*/) {
 	time_duration timeSinceLastFound = now - KaimiNearField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
 	if (millisecondsSinceLastReport > 500) {
+		ROS_INFO("[FindObjectTimerRoutine] no object found in last 500 ms");
 		KaimiNearField::Singleton().setNotFound();
 	}
 
@@ -52,7 +53,7 @@ void* heartBeatFunction(void* singleton) {
 
 void KaimiNearField::topicCb(const std_msgs::String& msg) {
 	// NearCamera:Found;LEFT-RIGHT:LR OK;FRONT-BACK:VERY NEAR;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
-	//ROS_INFO("KaimiNearField::topicCb, message: %s", msg.data.c_str());
+	ROS_INFO("[KaimiNearField::topicCb] Message: %s", msg.data.c_str());
 	
 	setNotFound();
 	char localStr[strlen(msg.data.c_str()) + 1];
@@ -81,7 +82,7 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 					leftRight_ = CENTER;
 				} else if (strcmp(value, "RIGHT") == 0) {
 					leftRight_ = RIGHT;
-				} else if (strcmp(value, "FAR_RIGHT") == 0) {
+				} else if (strcmp(value, "FAR RIGHT") == 0) {
 					leftRight_ = FAR_RIGHT;
 				} else {
 					leftRight_ = CENTER;
@@ -117,13 +118,13 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 				rows_ = atol(value);
 			}
 		} else {
-			ROS_INFO("!!! missing value");
+			ROS_INFO("[KaimiNearField::topicCb] !!! missing value");
 		}
 
 		keyValPtr = strtok(NULL, ";");
 	}
 
-	ROS_INFO("[KaimiNearField::topicCb] %i, area: %f, cols: %d, farNear: %i, leftRight: %i, rows: %d, x: %f, y: %f", found_, area_, cols_, farNear_, leftRight_, rows_, x_, y_);
+	ROS_INFO("[KaimiNearField::topicCb] area: %f, cols: %d, farNear: %s, leftRight: %s, rows: %d, x: %f, y: %f", area_, cols_, FAR_NEAR_TO_STRING[farNear_], LEFT_RIGHT_TO_STRING[leftRight_], rows_, x_, y_);
 }
 
 KaimiNearField::KaimiNearField() {
@@ -151,3 +152,17 @@ KaimiNearField& KaimiNearField::Singleton() {
 }
 
 
+const char* KaimiNearField::LEFT_RIGHT_TO_STRING[5] = {
+	"FAR_LEFT",
+	"LEFT",
+	"CENTER",
+	"RIGHT",
+	"FAR_RIGHT"
+};
+
+const char* KaimiNearField::FAR_NEAR_TO_STRING[4] = {
+	"VERY_FAR_AWAY",
+	"FAR_AWAY",
+	"NEAR",
+	"VERY_NEAR"
+};

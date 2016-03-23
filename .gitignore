@@ -13,6 +13,7 @@ frames.pdf
 square.bag
 
 ar_track_alvar/
+src/rbx1/
 src/geometry/
 src/image_pipeline/
 src/raspicam_node/

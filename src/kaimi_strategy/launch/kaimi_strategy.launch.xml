@@ -1,4 +1,8 @@
 <launch>
+	<arg name="doDebug" default="false" />
+	<arg if="$(arg doDebug)" name="launchPrefix" value="xterm -e gdb -args" />
+	<arg unless="$(arg doDebug)" name="launchPrefix" value="" />
+
 	<machine name="jetsonEth"
 		address="10.10.10.2"
 		user="ubuntu"

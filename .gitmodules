@@ -1,4 +1,0 @@
-[submodule "src/rbx1"]
-	path = src/rbx1
-	url = https://github.com/pirobot/rbx1.git
-        ignore = dirty

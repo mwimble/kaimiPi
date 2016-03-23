@@ -24,12 +24,16 @@ public:
 		FAR_RIGHT,
 	};
 
+	static const char* LEFT_RIGHT_TO_STRING[5];
+
 	enum FarNear {
 		VERY_FAR_AWAY,
 		FAR_AWAY,
 		NEAR,
 		VERY_NEAR
 	};
+
+	static const char* FAR_NEAR_TO_STRING[4];
 
 	static KaimiNearField& Singleton();
 
@@ -48,6 +52,7 @@ public:
 	int rows() { return rows_; }
 
 	void setNotFound() {
+		ROS_INFO("[KaimiNearField::setNotFound]");
 		found_ = false;
 	}
 

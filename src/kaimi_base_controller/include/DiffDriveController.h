@@ -47,6 +47,9 @@ private:
 
     boost::lockfree::queue<struct Command, boost::lockfree::capacity<50> > commandQueue_;
     boost::mutex stateLock_;
+    int queueLength_;
+    bool printedQueueTooBig_; // For metering of log messages.
+    bool printedPaused_; // For metering of log messages.
 
     ptime timeLastCommandReceived_;
 

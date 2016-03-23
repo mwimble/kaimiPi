@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="kaimi_imu" name="kaimi_imu" type="kaimi_imu_node" respawn="true" output="screen" >
+	</node>
+</launch>

@@ -2,114 +2,134 @@
 #include <ros/console.h>
 
 #include <geometry_msgs/Twist.h>
+#include "IsHealthy.h"
 #include "KaimiNearField.h"
+#include "KaimiStrategyFn.h"
+#include "StrategyException.h"
+
+int debug_last_message = 0; // So that we only emit messages when things change.
+		
+void logIfChanged(int id, const char* message) {
+	if (id != debug_last_message) {
+		ROS_INFO_STREAM(message);
+		debug_last_message = id;
+	}	
+}
+
+vector<KaimiStrategyFn*> behaviors;
 
 int main(int argc, char** argv) {
-	ros::init(argc, argv, "kinect_strategy_node");
+	static const double VEL_FAR_LEFT = 0.4;
+	static const double VEL_LEFT = 0.3;
+	static const double VEL_FAR_RIGHT = -0.4;
+	static const double VEL_RIGHT = -0.3;
+
+	ros::init(argc, argv, "kaimi_strategy_node");
 	ros::NodeHandle nh;
 	ros::Publisher cmdVelPub;
 	geometry_msgs::Twist cmdVel;
 	KaimiNearField& kaimiNearField = KaimiNearField::Singleton();
-	ros::Rate rate(10); // 10Hz loop rate
+
+	ros::Rate rate(20); // Loop rate
 
 	// If near field not found, did we previously see it as we were
 	// advancing very near to it?
 	bool wasAdvancingOnVeryNear = false;
 
-	cmdVelPub = nh.advertise<std_msgs::String>("cmd_vel", 1);
-		
+	bool printedNoSampleFound = false;
+
+	cmdVelPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+
+	behaviors.push_back(new IsHealthy());
+
 	while (ros::ok()) {
-		ros::spinOnce();
+		try { // Emplement Sequence behavior
+			rate.sleep();
+			ros::spinOnce();
 
-		cmdVel.linear.x = 0;
-		cmdVel.linear.y = 0;
-		cmdVel.linear.z = 0;
-		cmdVel.angular.x = 0;
-		cmdVel.angular.y = 0;
-		cmdVel.angular.z = 0;
-		// Handle sample foundd in near field camera.
-		if (kaimiNearField.found()) {
-			switch (kaimiNearField.leftRight()) {
-				case KaimiNearField::FAR_LEFT:
-					// Need to rotate left a lot.
-					wasAdvancingOnVeryNear = false;
-					cmdVel.angular.z = 1.0;
-					cmdVelPub.publish(cmdVel);
-					ROS_INFO("Moving fast left to center sample");
+			for(vector<KaimiStrategyFn*>::iterator it = behaviors.begin(); it != behaviors.end(); ++it) {
+				KaimiStrategyFn::RESULT_T result = ((*it)->tick)();
+				ROS_INFO_STREAM("[kaimi_strategy_node] iterator] result: " << KaimiStrategyFn::resultToString(result));
+				if (result == KaimiStrategyFn::RESTART_LOOP) {
+					ROS_INFO_STREAM("[kaimi_strategy_node] RESTART_LOOP result, restarting");
+					throw new StrategyException("RESTART_LOOP");
+				}
+
+				if (result == KaimiStrategyFn::FATAL) {
+					ROS_INFO_STREAM("[kaimi_strategy_node] FATAL result, exiting");
+					return -1;
+				}
+
+				if (result == KaimiStrategyFn::SUCCESS) {
+					ROS_INFO_STREAM("[kaimi_strategy_node] SUCCESS result, continuing");
 					continue;
+				}
 
-				case KaimiNearField::LEFT:
-					// Need to rotate left a bit.
-					wasAdvancingOnVeryNear = false;
-					cmdVel.angular.z = 0.5;
-					cmdVelPub.publish(cmdVel);
-					ROS_INFO("Moving left to center sample");
-					continue;
-
-				case KaimiNearField::CENTER:
-					// Sample is ahead.
-					switch (kaimiNearField.farNear()) {
-						case KaimiNearField::VERY_FAR_AWAY:
-							// Need to move ahead very fast.
-							wasAdvancingOnVeryNear = false;
-							cmdVel.linear.x = 2;
-							cmdVelPub.publish(cmdVel);
-							ROS_INFO("Moving fast forward to sample");
-							continue;
-
-						case KaimiNearField::FAR_AWAY:
-							// Need to move ahead normal.
-							wasAdvancingOnVeryNear = false;
-							cmdVel.linear.x = 1;
-							cmdVelPub.publish(cmdVel);
-							ROS_INFO("Moving forward to sample");
-							continue;
-
-						case KaimiNearField::NEAR:
-							// Need to move ahead slowly.
-							wasAdvancingOnVeryNear = false;
-							cmdVel.linear.x = 0.5;
-							cmdVelPub.publish(cmdVel);
-							ROS_INFO("Moving slowly forward to sample");
-							continue;
-
-						case KaimiNearField::VERY_NEAR:
-							// Need to move ahead very slowly.
-							wasAdvancingOnVeryNear = true;
-							cmdVel.linear.x = 0.4;
-							cmdVelPub.publish(cmdVel);
-							wasAdvancingOnVeryNear = true;
-							ROS_INFO("Moving very slowly forward to sample");
-							continue;
-					}
-
-					continue;
-
-				case KaimiNearField::RIGHT:
-					// Need to rotate right a bit.
-					wasAdvancingOnVeryNear = false;
-					cmdVel.angular.z = -0.5;
-					cmdVelPub.publish(cmdVel);
-					ROS_INFO("Moving right to center sample");
-					continue;
-
-				case KaimiNearField::FAR_RIGHT:
-					// Need to rotate right a lot.
-					wasAdvancingOnVeryNear = false;
-					cmdVel.angular.z = -1.0;
-					cmdVelPub.publish(cmdVel);
-					ROS_INFO("Moving fast right to center sample");
-					continue;
+				if (result == KaimiStrategyFn::FAILED) {
+					ROS_INFO_STREAM("[kaimi_strategy_node] FAILED result, aborting");
+					break;
+				}
 			}
-		} else {
-			// No found.
-			if (wasAdvancingOnVeryNear) {
-				ROS_INFO("IN POSITION to pick up sample");
-			}
+		} catch(StrategyException* e) {
+			ROS_INFO_STREAM("[kaimi_strategy_node] StrategyException: " << e->what());
+			// Do nothing.
 		}
-
-		rate.sleep();
 	}
+
+		// cmdVel.linear.x = 0;
+		// cmdVel.linear.y = 0;
+		// cmdVel.linear.z = 0;
+		// cmdVel.angular.x = 0;
+		// cmdVel.angular.y = 0;
+		// cmdVel.angular.z = 0;
+		// // Handle sample foundd in near field camera.
+		// if (kaimiNearField.found() && (kaimiNearField.x() != 0) && (kaimiNearField.y() != 0)) {
+		// 	// NearCamera:Found;LEFT-RIGHT:FAR RIGHT;FRONT-BACK:FAR AWAY;X:550.5;Y:212;AREA:1175;I:0;ROWS:480;COLS:640
+		// 	// x:320 = 0
+		// 	// 640 = 0.3, >320 => 0.2
+
+		// 	double zVel = 0.0;
+		// 	double xVel = 0.0;
+
+		// 	if (abs(kaimiNearField.x() - 320) > 5) {
+		// 		// Need to rotate to center
+		// 		if (kaimiNearField.x() > 320) {
+		// 			// Need to rotate right.
+		// 			zVel = -0.1 - ((kaimiNearField.x() - 320) * (0.2 / 320.0));
+		// 		} else {
+		// 			// Need to rotate left.
+		// 			zVel = 0.1 + ((320 - kaimiNearField.x()) * (0.2 / 320.0));
+		// 		}
+		// 	}
+
+		// 	xVel = (0.5 / 480.0) * (480.0 - kaimiNearField.y());
+		// 	if (xVel < 0.15) xVel = 0.15;
+		// 	cmdVel.linear.x = xVel;
+		// 	cmdVel.angular.z = zVel;
+		// 	cmdVelPub.publish(cmdVel);
+		// 	ROS_INFO_STREAM("[kaimi_stragety_node] x:"
+		// 		<< kaimiNearField.x()
+		// 		<< ", xVel: "
+		// 		<< xVel
+		// 		<< ", y: "
+		// 		<< kaimiNearField.y()
+		// 		<< ", zVel: "
+		// 		<< zVel); 
+
+		// 	wasAdvancingOnVeryNear = (abs(kaimiNearField.x() - 320) , 5) && (kaimiNearField.y() > 475);
+		// } else {
+		// 	if (!printedNoSampleFound) {
+		// 		ROS_INFO_STREAM("[main] No sample found");
+		// 		printedNoSampleFound = true;
+		// 	}
+
+		// 	// Not found.
+		// 	if (wasAdvancingOnVeryNear) {
+		// 		logIfChanged(9, "[main] IN POSITION to pick up sample");
+		// 	}
+		// }
+
+	// }
 
 	return 0;
 }
