@@ -12,7 +12,8 @@
     </machine>
 
 	<!-- Run strategy. -->	
-	<node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" respawn="true" output="screen" >
+	<!--node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" respawn="true" output="screen" -->
+	<node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" output="screen" >
 	</node>
 
 	<!-- Launch required nodes on JetsonEth to support kinect. -->

@@ -2,6 +2,7 @@
 #define __KAIMI_STRATEGY_FN
 
 #include <string>
+#include "StrategyContext.h"
 
 using namespace std;
 
@@ -25,7 +26,7 @@ public:
 	}
 
 	// Perform strategy.
-	virtual RESULT_T tick() = 0;
+	virtual RESULT_T tick(StrategyContext* strategyContext) = 0;
 };
 
 #endif

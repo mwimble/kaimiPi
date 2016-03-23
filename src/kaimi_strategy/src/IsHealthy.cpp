@@ -5,7 +5,7 @@ string IsHealthy::name() {
 	return string("IsHealthy");
 }
 
-KaimiStrategyFn::RESULT_T IsHealthy::tick() {
+KaimiStrategyFn::RESULT_T IsHealthy::tick(StrategyContext* strategyContext) {
 	static int c = 0;
 
 	RESULT_T result = ++c > 5 ? FATAL : (c > 3 ? SUCCESS : FAILED);

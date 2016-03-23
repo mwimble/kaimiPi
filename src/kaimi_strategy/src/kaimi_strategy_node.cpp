@@ -5,6 +5,7 @@
 #include "IsHealthy.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
+#include "StrategyContext.h"
 #include "StrategyException.h"
 
 int debug_last_message = 0; // So that we only emit messages when things change.
@@ -34,12 +35,13 @@ int main(int argc, char** argv) {
 
 	// If near field not found, did we previously see it as we were
 	// advancing very near to it?
-	bool wasAdvancingOnVeryNear = false;
+	// bool wasAdvancingOnVeryNear = false;
 
-	bool printedNoSampleFound = false;
+	// bool printedNoSampleFound = false;
 
 	cmdVelPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
+	StrategyContext* strategyContext = new StrategyContext();
 	behaviors.push_back(new IsHealthy());
 
 	while (ros::ok()) {
@@ -48,7 +50,7 @@ int main(int argc, char** argv) {
 			ros::spinOnce();
 
 			for(vector<KaimiStrategyFn*>::iterator it = behaviors.begin(); it != behaviors.end(); ++it) {
-				KaimiStrategyFn::RESULT_T result = ((*it)->tick)();
+				KaimiStrategyFn::RESULT_T result = ((*it)->tick)(strategyContext);
 				ROS_INFO_STREAM("[kaimi_strategy_node] iterator] result: " << KaimiStrategyFn::resultToString(result));
 				if (result == KaimiStrategyFn::RESTART_LOOP) {
 					ROS_INFO_STREAM("[kaimi_strategy_node] RESTART_LOOP result, restarting");
