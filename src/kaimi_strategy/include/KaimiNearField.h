@@ -1,3 +1,5 @@
+#ifndef __KAIMI_NEAR_FIELD
+#define __KAIMI_NEAR_FIELD
 
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -87,3 +89,5 @@ private:
 	double x_;
 	double y_;
 };
+
+#endif

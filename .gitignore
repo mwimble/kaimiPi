@@ -5,6 +5,11 @@
 .DS_Store
 .catkin_workspace
 
+.cproject
+.project
+.settings/
+rosinclude
+
 build/
 devel/
 install/

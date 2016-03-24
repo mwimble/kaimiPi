@@ -2,6 +2,7 @@
 #include <ros/console.h>
 
 #include <geometry_msgs/Twist.h>
+#include "FetchPrecachedSample.h"
 #include "IsHealthy.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
@@ -42,7 +43,8 @@ int main(int argc, char** argv) {
 	cmdVelPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
 	StrategyContext* strategyContext = new StrategyContext();
-	behaviors.push_back(new IsHealthy());
+	behaviors.push_back(&IsHealthy::Singleton());
+	behaviors.push_back(&FetchPrecachedSample::Singleton());
 
 	while (ros::ok()) {
 		try { // Emplement Sequence behavior
@@ -51,24 +53,28 @@ int main(int argc, char** argv) {
 
 			for(vector<KaimiStrategyFn*>::iterator it = behaviors.begin(); it != behaviors.end(); ++it) {
 				KaimiStrategyFn::RESULT_T result = ((*it)->tick)(strategyContext);
-				ROS_INFO_STREAM("[kaimi_strategy_node] iterator] result: " << KaimiStrategyFn::resultToString(result));
 				if (result == KaimiStrategyFn::RESTART_LOOP) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] RESTART_LOOP result, restarting");
+					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", RESTART_LOOP result, restarting");
 					throw new StrategyException("RESTART_LOOP");
 				}
 
 				if (result == KaimiStrategyFn::FATAL) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] FATAL result, exiting");
+					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", FATAL result, exiting");
 					return -1;
 				}
 
+				if (result == KaimiStrategyFn::RUNNING) {
+					ROS_INFO_STREAM("[kaimi_strategy_node] function " << ((*it)->name()) << ", RUNNING, restarting");
+					throw new StrategyException("RESTART_LOOP");
+				}
+
 				if (result == KaimiStrategyFn::SUCCESS) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] SUCCESS result, continuing");
+					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", SUCCESS result, continuing");
 					continue;
 				}
 
 				if (result == KaimiStrategyFn::FAILED) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] FAILED result, aborting");
+					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", FAILED result, aborting");
 					break;
 				}
 			}

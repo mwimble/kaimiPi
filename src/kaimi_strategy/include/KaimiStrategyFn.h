@@ -15,6 +15,7 @@ public:
 		FAILED,				// Strategy failed, do not continue.
 		FATAL,				// Something is fatally wrong.
 		RESTART_LOOP,		// Strategy prempts downstream strategies, go to top of tree.
+		RUNNING,			// Strategy is in progress.
 		SUCCESS				// Strategy succeeded, continue on.
 	} RESULT_T;
 

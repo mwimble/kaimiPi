@@ -137,6 +137,7 @@ include_directories(
 ## Declare a C++ executable
 add_executable(
   kaimi_strategy_node
+  src/FetchPrecachedSample.cpp
   src/IsHealthy.cpp
   src/kaimi_strategy_node.cpp
   src/KaimiStrategyFn.cpp
