@@ -10,8 +10,6 @@ public:
 
 	bool precachedSampleFetched;			// True => Have picked up (not necessarily delivered) the precached sample.
 
-	bool precachedSampleIsVeryNear;			// True => While moving towards precached sample, we came very near to it.
-
 	bool precachedSampleIsVisible;			// True => Near field camera sees precached sample.
 };
 
