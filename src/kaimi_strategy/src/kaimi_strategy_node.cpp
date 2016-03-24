@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 		// cmdVel.angular.x = 0;
 		// cmdVel.angular.y = 0;
 		// cmdVel.angular.z = 0;
-		// // Handle sample foundd in near field camera.
+		// // Handle sample found in near field camera.
 		// if (kaimiNearField.found() && (kaimiNearField.x() != 0) && (kaimiNearField.y() != 0)) {
 		// 	// NearCamera:Found;LEFT-RIGHT:FAR RIGHT;FRONT-BACK:FAR AWAY;X:550.5;Y:212;AREA:1175;I:0;ROWS:480;COLS:640
 		// 	// x:320 = 0

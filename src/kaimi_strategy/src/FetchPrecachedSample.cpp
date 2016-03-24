@@ -2,7 +2,7 @@
 #include "FetchPrecachedSample.h"
 
 FetchPrecachedSample::FetchPrecachedSample() {
-
+	kaimiNearField = &KaimiNearField::Singleton();
 }
 
 FetchPrecachedSample& FetchPrecachedSample::Singleton() {
@@ -16,6 +16,9 @@ string FetchPrecachedSample::name() {
 
 KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyContext) {
 	RESULT_T result = FATAL;
+
+	strategyContext->precachedSampleIsVisible = kaimiNearField->found() && (kaimiNearField->x() != 0) && (kaimiNearField->y() != 0);
+
 	if (strategyContext->precachedSampleFetched) {
 		result = SUCCESS;
 	} else if (strategyContext->atPrecachedSample) {
@@ -25,7 +28,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 	} else if (strategyContext->precachedSampleIsVisible) {
 		// Move towards sample.
 		ROS_INFO_STREAM("[FetchPrecachedSample] need to move towards sample");
-		result = FATAL; // TODO Finish strategy.
+		result = RUNNING; // TODO Finish strategy.
 	} else {
 		// Precached sample is not visible.
 		if (strategyContext->precachedSampleIsVeryNear) {
@@ -35,7 +38,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		}
 
 		ROS_INFO_STREAM("[FetchPrecachedSample] precached sample is not visible");
-		result = FATAL; // TODO Finish strategy.
+		result = FAILED; // TODO Finish strategy.
 	}
 
 	ROS_INFO_STREAM("[FetchPrecachedSample.tick] result: " << resultToString(result));

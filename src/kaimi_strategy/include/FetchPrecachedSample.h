@@ -6,7 +6,7 @@
 
 class FetchPrecachedSample : public KaimiStrategyFn {
 private:
-	KaimiNearField*	nearField;
+	KaimiNearField* kaimiNearField;
 
 	// Singleton pattern.
 	FetchPrecachedSample();
