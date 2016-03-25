@@ -102,8 +102,6 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 
 		keyValPtr = strtok(NULL, ";");
 	}
-
-	ROS_INFO("[KaimiNearField::topicCb] area: %f, cols: %d, rows: %d, x: %f, y: %f", area_, cols_, rows_, x_, y_);
 }
 
 KaimiNearField::KaimiNearField() {

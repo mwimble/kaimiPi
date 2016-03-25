@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
 			rate.sleep();
 			ros::spinOnce();
 
+			ROS_INFO_STREAM("--- ---- ---- ---- Begin of strategy loop ---- ---- ---- ----");
 			for(vector<KaimiStrategyFn*>::iterator it = behaviors.begin(); it != behaviors.end(); ++it) {
 				KaimiStrategyFn::RESULT_T result = ((*it)->tick)(strategyContext);
 				if (result == KaimiStrategyFn::RESTART_LOOP) {

@@ -6,11 +6,13 @@ public:
 	/*
 	* For fetching the precached sample.
 	*/
-	bool atPrecachedSample;					// True => Arrived at precached sample, ready to retrieve.
+	bool atPrecachedSample;						// True => Arrived at precached sample, ready to retrieve.
 
-	bool precachedSampleFetched;			// True => Have picked up (not necessarily delivered) the precached sample.
+	bool precachedSampleFetched;				// True => Have picked up (not necessarily delivered) the precached sample.
 
-	bool precachedSampleIsVisible;			// True => Near field camera sees precached sample.
+	bool precachedSampleIsVisibleNearField;		// True => Near field camera sees precached sample.
+
+	bool precachedSampleIsVisibleMidField;		// True => Mid field camera sees precached sample.
 };
 
 #endif

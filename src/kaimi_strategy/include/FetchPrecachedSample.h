@@ -5,7 +5,7 @@
 #include <ros/console.h>
 #include <geometry_msgs/Twist.h>
 
-
+#include "KaimiMidField.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
 
@@ -14,6 +14,8 @@ private:
 	geometry_msgs::Twist cmdVel;
 
 	ros::Publisher cmdVelPub;
+
+	KaimiMidField* kaimiMidField;
 
 	KaimiNearField* kaimiNearField;
 
