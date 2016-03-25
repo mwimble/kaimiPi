@@ -55,7 +55,6 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 	// NearCamera:Found;LEFT-RIGHT:LR OK;FRONT-BACK:VERY NEAR;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
 	ROS_INFO("[KaimiNearField::topicCb] Message: %s", msg.data.c_str());
 	
-	setNotFound();
 	char localStr[strlen(msg.data.c_str()) + 1];
 	strcpy(localStr, msg.data.c_str());
 
@@ -73,7 +72,13 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 			keyPtr++;
 			strcpy(key, keyValue);
 			char* value = keyPtr;
-			if (strcmp(key, "LEFT-RIGHT") == 0) {
+			if (strcmp(key, "Found") == 0) {
+				if (strcmp(value, "Found")) {
+					setFound();
+				} else {
+					setNotFound();
+				}
+			} else if (strcmp(key, "LEFT-RIGHT") == 0) {
 				if (strcmp(value, "FAR LEFT") == 0) {
 					leftRight_ = FAR_LEFT;
 				} else if (strcmp(value, "LEFT") == 0) {

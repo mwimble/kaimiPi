@@ -7,7 +7,7 @@ project(kaimi_strategy)
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   geometry_msgs
-  move_base_msgs
+##  move_base_msgs
   roscpp
   rospy
   rosserial_msgs
@@ -107,7 +107,15 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES kaimi_strategy
-  CATKIN_DEPENDS dynamic_reconfigure geometry_msgs move_base_msgs roscpp rospy rosserial_msgs rosserial_msgs std_msgs
+  CATKIN_DEPENDS 
+  dynamic_reconfigure 
+  geometry_msgs 
+##  move_base_msgs 
+  roscpp 
+  rospy 
+  rosserial_msgs 
+  rosserial_msgs 
+  std_msgs
   DEPENDS system_lib
 )
 

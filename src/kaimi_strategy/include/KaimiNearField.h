@@ -53,6 +53,10 @@ public:
 
 	int rows() { return rows_; }
 
+	void setFound() {
+		ROS_INFO("[KaimiNearField::setFound]");
+		found_ = true;
+	}
 	void setNotFound() {
 		ROS_INFO("[KaimiNearField::setNotFound]");
 		found_ = false;
