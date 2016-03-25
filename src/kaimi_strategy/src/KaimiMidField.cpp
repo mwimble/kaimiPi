@@ -10,27 +10,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "KaimiNearField.h"
+#include "KaimiMidField.h"
 
-boost::asio::io_service kaimiNearFieldIoService_;
-boost::asio::deadline_timer kaimiNearFieldDeadlineTimer_(kaimiNearFieldIoService_, boost::posix_time::milliseconds(500));
+boost::asio::io_service KaimiMidFieldIoService_;
+boost::asio::deadline_timer KaimiMidFieldDeadlineTimer_(KaimiMidFieldIoService_, boost::posix_time::milliseconds(500));
 
 static void * FindObjectTimerRoutine(const boost::system::error_code& /*e*/) {
 	ptime now = microsec_clock::local_time();
-	time_duration timeSinceLastFound = now - KaimiNearField::Singleton().lastTimeFound();
+	time_duration timeSinceLastFound = now - KaimiMidField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
 	if (millisecondsSinceLastReport > 500) {
 		ROS_INFO("[FindObjectTimerRoutine] no object found in last 500 ms");
-		KaimiNearField::Singleton().setNotFound();
+		KaimiMidField::Singleton().setNotFound();
 	}
 
-	kaimiNearFieldDeadlineTimer_.expires_at(kaimiNearFieldDeadlineTimer_.expires_at() + milliseconds(500));
-	kaimiNearFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
+	KaimiMidFieldDeadlineTimer_.expires_at(KaimiMidFieldDeadlineTimer_.expires_at() + milliseconds(500));
+	KaimiMidFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
 }
 
-void* nearFieldHeartbeatFunction(void* singleton) {
-    kaimiNearFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
-    kaimiNearFieldIoService_.run();
+void* heartBeatFunction(void* singleton) {
+    KaimiMidFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
+    KaimiMidFieldIoService_.run();
 }
 
 // void FindObject::configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level) {
@@ -51,9 +51,9 @@ void* nearFieldHeartbeatFunction(void* singleton) {
 // 	}
 // }
 
-void KaimiNearField::topicCb(const std_msgs::String& msg) {
-	// NearCamera:Found;LEFT-RIGHT:LR OK;FRONT-BACK:VERY NEAR;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
-	ROS_INFO("[KaimiNearField::topicCb] Message: %s", msg.data.c_str());
+void KaimiMidField::topicCb(const std_msgs::String& msg) {
+	// NearCamera:found;R;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
+	ROS_INFO("[KaimiMidField::topicCb] Message: %s", msg.data.c_str());
 	
 	char localStr[strlen(msg.data.c_str()) + 1];
 	strcpy(localStr, msg.data.c_str());
@@ -97,22 +97,22 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 				rows_ = atol(value);
 			}
 		} else {
-			ROS_INFO("[KaimiNearField::topicCb] !!! missing value");
+			ROS_INFO("[KaimiMidField::topicCb] !!! missing value");
 		}
 
 		keyValPtr = strtok(NULL, ";");
 	}
 
-	ROS_INFO("[KaimiNearField::topicCb] area: %f, cols: %d, rows: %d, x: %f, y: %f", area_, cols_, rows_, x_, y_);
+	ROS_INFO("[KaimiMidField::topicCb] area: %f, cols: %d, rows: %d, x: %f, y: %f", area_, cols_, rows_, x_, y_);
 }
 
-KaimiNearField::KaimiNearField() {
+KaimiMidField::KaimiMidField() {
 	ros::param::param<std::string>("nearfield_topic_name", nearfieldTopicName_, "/nearSampleFound");
 	ROS_INFO("PARAM nearfield_topic_name: %s", nearfieldTopicName_.c_str());
-	nearfield_sub_ = nh_.subscribe(nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, this);
+	nearfield_sub_ = nh_.subscribe(nearfieldTopicName_.c_str(), 1, &KaimiMidField::topicCb, this);
 
 	pthread_t thread;
-	int rc = pthread_create(&thread, NULL, nearFieldHeartbeatFunction, this);
+	int rc = pthread_create(&thread, NULL, heartBeatFunction, this);
 
 	area_ = 0.0;
 	cols_ = 0;
@@ -123,8 +123,8 @@ KaimiNearField::KaimiNearField() {
 }
 
 
-KaimiNearField& KaimiNearField::Singleton() {
-	static KaimiNearField singleton_;
+KaimiMidField& KaimiMidField::Singleton() {
+	static KaimiMidField singleton_;
 	return singleton_;
 }
 

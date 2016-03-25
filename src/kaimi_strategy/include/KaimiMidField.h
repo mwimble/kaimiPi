@@ -1,5 +1,5 @@
-#ifndef __KAIMI_NEAR_FIELD
-#define __KAIMI_NEAR_FIELD
+#ifndef __KAIMI_MID_FIELD
+#define __KAIMI_MID_FIELD
 
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -16,9 +16,9 @@
 using namespace std;
 using namespace boost::posix_time;
 
-class KaimiNearField {
+class KaimiMidField {
 public:
-	static KaimiNearField& Singleton();
+	static KaimiMidField& Singleton();
 
 	double area() { return area_; }
 
@@ -54,9 +54,9 @@ private:
 
 	// static void configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level);
 
-	KaimiNearField();
-	KaimiNearField(KaimiNearField const&) {};
-	KaimiNearField& operator=(KaimiNearField const&) {};
+	KaimiMidField();
+	KaimiMidField(KaimiMidField const&) {};
+	KaimiMidField& operator=(KaimiMidField const&) {};
 
 	double area_;
 	int cols_;
