@@ -3,6 +3,7 @@
 
 #include "FetchPrecachedSample.h"
 #include "IsHealthy.h"
+#include "KaimiMidField.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
 #include "StrategyContext.h"
@@ -30,6 +31,7 @@ int main(int argc, char** argv) {
 	ros::Publisher cmdVelPub;
 	geometry_msgs::Twist cmdVel;
 	KaimiNearField& kaimiNearField = KaimiNearField::Singleton();
+	KaimiMidField& kaimiMidField = KaimiMidField::Singleton();
 
 	ros::Rate rate(20); // Loop rate
 

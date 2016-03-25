@@ -15,21 +15,21 @@
 boost::asio::io_service kaimiNearFieldIoService_;
 boost::asio::deadline_timer kaimiNearFieldDeadlineTimer_(kaimiNearFieldIoService_, boost::posix_time::milliseconds(500));
 
-static void * FindObjectTimerRoutine(const boost::system::error_code& /*e*/) {
+static void * KaimiNearFieldFindObjectTimerRoutine(const boost::system::error_code& /*e*/) {
 	ptime now = microsec_clock::local_time();
 	time_duration timeSinceLastFound = now - KaimiNearField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
 	if (millisecondsSinceLastReport > 500) {
-		ROS_INFO("[FindObjectTimerRoutine] no object found in last 500 ms");
+		ROS_INFO("[KaimiNearFieldFindObjectTimerRoutine] no object found in last 500 ms");
 		KaimiNearField::Singleton().setNotFound();
 	}
 
 	kaimiNearFieldDeadlineTimer_.expires_at(kaimiNearFieldDeadlineTimer_.expires_at() + milliseconds(500));
-	kaimiNearFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
+	kaimiNearFieldDeadlineTimer_.async_wait(KaimiNearFieldFindObjectTimerRoutine);
 }
 
-void* nearFieldHeartbeatFunction(void* singleton) {
-    kaimiNearFieldDeadlineTimer_.async_wait(FindObjectTimerRoutine);
+void* kaimiNearFieldNearFieldHeartbeatFunction(void* singleton) {
+    kaimiNearFieldDeadlineTimer_.async_wait(KaimiNearFieldFindObjectTimerRoutine);
     kaimiNearFieldIoService_.run();
 }
 
@@ -81,7 +81,7 @@ void KaimiNearField::topicCb(const std_msgs::String& msg) {
 			} else if (strcmp(key, "NearCamera") == 0) {
 				if (strcmp(value, "Found") == 0) {
 					found_ = true;
-					lastNearFieldReport_ = microsec_clock::local_time();
+					lastFieldReport_ = microsec_clock::local_time();
 				} else {
 					found_ = false;
 				}
@@ -112,7 +112,7 @@ KaimiNearField::KaimiNearField() {
 	nearfield_sub_ = nh_.subscribe(nearfieldTopicName_.c_str(), 1, &KaimiNearField::topicCb, this);
 
 	pthread_t thread;
-	int rc = pthread_create(&thread, NULL, nearFieldHeartbeatFunction, this);
+	int rc = pthread_create(&thread, NULL, kaimiNearFieldNearFieldHeartbeatFunction, this);
 
 	area_ = 0.0;
 	cols_ = 0;

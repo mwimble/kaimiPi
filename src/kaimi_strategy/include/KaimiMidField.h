@@ -11,7 +11,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <string>
 
-//#include "kaimi_near_camera/kaimi_near_camera_paramsConfig.h"
+//#include "kaimi_mid_camera/kaimi_mid_camera_paramsConfig.h"
 
 using namespace std;
 using namespace boost::posix_time;
@@ -26,7 +26,7 @@ public:
 
 	bool found() { return found_; }
 
-	ptime lastTimeFound() { return lastNearFieldReport_; }
+	ptime lastTimeFound() { return lastFieldReport_; }
 
 	int rows() { return rows_; }
 
@@ -44,15 +44,15 @@ public:
 private:
 
 	ros::NodeHandle nh_;
-	string nearfieldTopicName_;
-	ros::Subscriber nearfield_sub_;
+	string midfieldTopicName_;
+	ros::Subscriber midfield_sub_;
 
 	void topicCb(const std_msgs::String& msg);
 
-	// dynamic_reconfigure::Server<kaimi_near_camera::kaimi_near_camera_paramsConfig> dynamicConfigurationServer;
-	// dynamic_reconfigure::Server<kaimi_near_camera::kaimi_near_camera_paramsConfig>::CallbackType f;
+	// dynamic_reconfigure::Server<kaimi_mid_camera::kaimi_mid_camera_paramsConfig> dynamicConfigurationServer;
+	// dynamic_reconfigure::Server<kaimi_mid_camera::kaimi_mid_camera_paramsConfig>::CallbackType f;
 
-	// static void configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level);
+	// static void configurationCallback(kaimi_mid_camera::kaimi_mid_camera_paramsConfig &config, uint32_t level);
 
 	KaimiMidField();
 	KaimiMidField(KaimiMidField const&) {};
@@ -61,7 +61,7 @@ private:
 	double area_;
 	int cols_;
 	bool found_;
-	ptime lastNearFieldReport_;
+	ptime lastFieldReport_;
 	int rows_;
 	double x_;
 	double y_;

@@ -26,7 +26,7 @@ public:
 
 	bool found() { return found_; }
 
-	ptime lastTimeFound() { return lastNearFieldReport_; }
+	ptime lastTimeFound() { return lastFieldReport_; }
 
 	int rows() { return rows_; }
 
@@ -61,7 +61,7 @@ private:
 	double area_;
 	int cols_;
 	bool found_;
-	ptime lastNearFieldReport_;
+	ptime lastFieldReport_;
 	int rows_;
 	double x_;
 	double y_;

@@ -6,7 +6,7 @@
 #include <image_transport/image_transport.h>
 #include <string>
 
-//#include "kaimi_near_camera/kaimi_near_camera_paramsConfig.h"
+//#include "kaimi_mid_camera/kaimi_mid_camera_paramsConfig.h"
 
 using namespace std;
 
@@ -33,12 +33,12 @@ private:
 	bool showWindows_;
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
-	ros::Publisher nearSampleFoundPub_;
+	ros::Publisher midSampleFoundPub_;
 
-//	dynamic_reconfigure::Server<kaimi_near_camera::kaimi_near_camera_paramsConfig> dynamicConfigurationServer;
-//	dynamic_reconfigure::Server<kaimi_near_camera::kaimi_near_camera_paramsConfig>::CallbackType f;
+//	dynamic_reconfigure::Server<kaimi_mid_camera::kaimi_mid_camera_paramsConfig> dynamicConfigurationServer;
+//	dynamic_reconfigure::Server<kaimi_mid_camera::kaimi_mid_camera_paramsConfig>::CallbackType f;
 //
-//	static void configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level);
+//	static void configurationCallback(kaimi_mid_camera::kaimi_mid_camera_paramsConfig &config, uint32_t level);
 
 	void imageCb(const sensor_msgs::ImageConstPtr& msg);
 

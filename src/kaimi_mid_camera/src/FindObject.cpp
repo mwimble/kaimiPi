@@ -19,7 +19,7 @@ using namespace std;
 
 extern FindObject* findObject;
 
-//void FindObject::configurationCallback(kaimi_near_camera::kaimi_near_camera_paramsConfig &config, uint32_t level) {
+//void FindObject::configurationCallback(kaimi_mid_camera::kaimi_mid_camera_paramsConfig &config, uint32_t level) {
 //	ROS_INFO("Reconfigure Request hue_low: %d, hue_high: %d, saturation_low: %d, saturation high: %d, value_low: %d, value_high: %d, contourSizeThreshold: %d",
 //	         config.hue_low, config.hue_low,
 //	         config.saturation_low, config.saturation_high,
@@ -102,7 +102,7 @@ void FindObject::imageCb(const sensor_msgs::ImageConstPtr& msg) {
 				}
 
 				stringstream msg;
-				msg << "NearCamera:Found;X:" << x
+				msg << "MidCamera:Found;X:" << x
 					<< ";Y:" << y
 					<< ";AREA:" << maxBlobSize
 					<< ";I:" << maxBlobIndex
@@ -110,16 +110,16 @@ void FindObject::imageCb(const sensor_msgs::ImageConstPtr& msg) {
 					<< ";COLS:" << cv_ptr->image.cols;
 				std_msgs::String message;
 				message.data = msg.str();
-				nearSampleFoundPub_.publish(message);
+				midSampleFoundPub_.publish(message);
 			}
 		} else {
 			stringstream msg;
-			msg << "NearCamera:NotFound;X:0;Y:0;AREA:0;I:0;ROWS:"
+			msg << "MidCamera:NotFound;X:0;Y:0;AREA:0;I:0;ROWS:"
 				<< cv_ptr->image.rows
 				<< ";COLS:" << cv_ptr->image.cols;
 			std_msgs::String message;
 			message.data = msg.str();
-			nearSampleFoundPub_.publish(message);
+			midSampleFoundPub_.publish(message);
 		}
 
 		if (showWindows_) {
@@ -157,7 +157,7 @@ FindObject::FindObject() : it_(nh_),
 	ROS_INFO("PARAM image_topic_name: %s", imageTopicName_.c_str());
 	ROS_INFO("PARAM show_windows: %d", showWindows_);
 	image_sub_ = it_.subscribe(imageTopicName_.c_str(), 1, &FindObject::imageCb, this);
-	nearSampleFoundPub_ = nh_.advertise<std_msgs::String>("nearSampleFound", 2);
+	midSampleFoundPub_ = nh_.advertise<std_msgs::String>("midSampleFound", 2);
 	if (showWindows_) {
     	namedWindow(OPENCV_WINDOW, CV_WINDOW_AUTOSIZE);
 
