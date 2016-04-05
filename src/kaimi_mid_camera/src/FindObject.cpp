@@ -153,7 +153,7 @@ FindObject::FindObject() : it_(nh_),
 //	dynamicConfigurationServer.setCallback(f);
 
 	nh_.param<std::string>("image_topic_name", imageTopicName_, "/rosberrypi_cam/image_raw");
-	nh_.param<bool>("show_windows", showWindows_, false);
+	nh_.param<bool>("show_windows", showWindows_, true);
 	ROS_INFO("PARAM image_topic_name: %s", imageTopicName_.c_str());
 	ROS_INFO("PARAM show_windows: %d", showWindows_);
 	image_sub_ = it_.subscribe(imageTopicName_.c_str(), 1, &FindObject::imageCb, this);

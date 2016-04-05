@@ -15,6 +15,7 @@ DiffDriveController::DiffDriveController() :
 	
 	wiringPiSetupSys();
 	pinMode(PAUSE_PIN, INPUT);
+	// pullUpDnControl(PAUSE_PIN, PUD_UP); // Must be done via `gpio export 12 up`
 	fbHandle_ = wiringPiI2CSetup(MCP4725_FB_ADDR);
 	lrHandle_ = wiringPiI2CSetup(MCP4725_LR_ADDR);
 
