@@ -416,17 +416,17 @@ uint8_t MPU6050::dmpInitialize() {
             DEBUG_PRINTLN(fifoCount);
             getFIFOBytes(fifoBuffer, fifoCount);
 
-            DEBUG_PRINTLN(F("Setting motion detection threshold to 2..."));
-            setMotionDetectionThreshold(2);
+            //#####DEBUG_PRINTLN(F("Setting motion detection threshold to 2..."));
+            //#####setMotionDetectionThreshold(2);
 
-            DEBUG_PRINTLN(F("Setting zero-motion detection threshold to 156..."));
-            setZeroMotionDetectionThreshold(156);
+            //#####DEBUG_PRINTLN(F("Setting zero-motion detection threshold to 156..."));
+            //#####setZeroMotionDetectionThreshold(156);
 
-            DEBUG_PRINTLN(F("Setting motion detection duration to 80..."));
-            setMotionDetectionDuration(80);
+            //#####DEBUG_PRINTLN(F("Setting motion detection duration to 80..."));
+            //#####setMotionDetectionDuration(80);
 
-            DEBUG_PRINTLN(F("Setting zero-motion detection duration to 0..."));
-            setZeroMotionDetectionDuration(0);
+            //#####DEBUG_PRINTLN(F("Setting zero-motion detection duration to 0..."));
+            //#####setZeroMotionDetectionDuration(0);
 
             DEBUG_PRINTLN(F("Resetting FIFO..."));
             resetFIFO();

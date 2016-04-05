@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <sensor_msgs/Imu.h>
+#include <tf/transform_datatypes.h>
 
 #include "MPU6050_6Axis_MotionApps20.h"
 
@@ -69,6 +70,12 @@ int main(int argc, char** argv) {
 			imu.orientation.y = q.y;
 			imu.orientation.z = q.z;
 			ROS_INFO("Quaternion w: %7.2f, x: %7.2f, y: %7.2f, z: %7.2f", q.w, q.x, q.y, q.z);
+
+tf::Quaternion qq;
+double roll, pitch, yaw;
+tf::quaternionMsgToTF(imu.orientation, qq);
+tf::Matrix3x3(qq).getRPY(roll, pitch, yaw);
+ROS_INFO("TF roll: %7.2f, pitch: %7.2f, yaw: %7.2f", roll, pitch, yaw);
 
 			float ypr[3];
 			mpu.dmpGetGravity(&gravity, &q);

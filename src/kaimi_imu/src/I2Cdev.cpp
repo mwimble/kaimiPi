@@ -358,11 +358,11 @@ bool I2Cdev::writeBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_
     memcpy(buf+1,data,length);
     count = write(fd, buf, length+1);
     if (count < 0) {
-        fprintf(stderr, "Failed to write device(%d): %s\n", count, ::strerror(errno));
+        fprintf(stderr, "[I2Cdev::writeBytes] Failed to write device(%d): %s\n", count, ::strerror(errno));
         close(fd);
         return(FALSE);
     } else if (count != length+1) {
-        fprintf(stderr, "Short write to device, expected %d, got %d\n", length+1, count);
+        fprintf(stderr, "[I2Cdev::writeBytes] Short write to device, expected %d, got %d\n", length+1, count);
         close(fd);
         return(FALSE);
     }
@@ -408,11 +408,11 @@ bool I2Cdev::writeWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16
     }
     count = write(fd, buf, length*2+1);
     if (count < 0) {
-        fprintf(stderr, "Failed to write device(%d): %s\n", count, ::strerror(errno));
+        fprintf(stderr, "[I2Cdev::writeWords] Failed to write device(%d): %s\n", count, ::strerror(errno));
         close(fd);
         return(FALSE);
     } else if (count != length*2+1) {
-        fprintf(stderr, "Short write to device, expected %d, got %d\n", length+1, count);
+        fprintf(stderr, "[I2Cdev::writeWords] Short write to device, expected %d, got %d\n", length+1, count);
         close(fd);
         return(FALSE);
     }
