@@ -49,7 +49,6 @@ int main(int argc, char** argv) {
 	behaviors.push_back(&IsHealthy::Singleton());
 	behaviors.push_back(&FetchPrecachedSample::Singleton());
 
-strategyContext->needToTurn180 = true; //#####
 	while (ros::ok()) {
 		try { // Emplement Sequence behavior
 			rate.sleep();
