@@ -2,6 +2,7 @@
 #include <ros/console.h>
 
 #include "FetchPrecachedSample.h"
+#include "GoHome.h"
 #include "IsHealthy.h"
 #include "KaimiImu.h"
 #include "KaimiMidField.h"
@@ -33,6 +34,7 @@ int main(int argc, char** argv) {
 	strategyContext->lookingForPrecachedSample = true;
 	behaviors.push_back(&IsHealthy::Singleton());
 	behaviors.push_back(&FetchPrecachedSample::Singleton());
+	behaviors.push_back(&GoHome::Singleton());
 
 	while (ros::ok()) {
 		try { // Emplement Sequence behavior

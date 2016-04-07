@@ -1,5 +1,5 @@
-#ifndef __FETCH_PRECACHED_SAMPLE
-#define __FETCH_PRECACHED_SAMPLE
+#ifndef __GO_HOME
+#define __GO_HOME
 
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -9,14 +9,13 @@
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
 
-class FetchPrecachedSample : public KaimiStrategyFn {
+class GoHome : public KaimiStrategyFn {
 private:
 	// For logging current strategy.
 	static const string strategyHasntStarted;
-	static const string strategyMovingTowardsSampleViaMidfieldCamera;
-	static const string strategyMovingTowardsSampleViaNearfieldCamera;
-	static const string strategyNoSampleSeen;
-	static const string strategyPickingUpSample;
+	static const string strategyMovingTowardsHomeViaMidfieldCamera;
+	static const string strategyMovingTowardsHomeViaNearfieldCamera;
+	static const string strategyNoHomeSeen;
 	static const string strategySuccess;
 	static const string strategyTurning180;
 
@@ -39,16 +38,16 @@ private:
 	void publishCurrentStragety(string strategy);
 
 	// Singleton pattern.
-	FetchPrecachedSample();
-	FetchPrecachedSample(FetchPrecachedSample const&) {};
-	FetchPrecachedSample& operator=(FetchPrecachedSample const&) {}
+	GoHome();
+	GoHome(GoHome const&) {};
+	GoHome& operator=(GoHome const&) {}
 
 public:
 	RESULT_T tick(StrategyContext* strategyContext);
 
 	string name();
 
-	static FetchPrecachedSample& Singleton();
+	static GoHome& Singleton();
 };
 
 #endif

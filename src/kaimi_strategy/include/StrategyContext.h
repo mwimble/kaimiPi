@@ -11,6 +11,12 @@ public:
 	*/
 	bool atPrecachedSample;						// True => Arrived at precached sample, ready to retrieve.
 
+	bool homeIsVisibleNearField;				// True => Near field camera sees home.
+
+	bool homeIsVisibleMidField;					// True => Mid field camera sees home.
+
+	bool lookingForHome;						// True => Trying to return home.
+
 	bool lookingForPrecachedSample;				// True => Trying to find the precached sample;
 
 	bool needToTurn180;							// True => Need to turn 180 degrees.

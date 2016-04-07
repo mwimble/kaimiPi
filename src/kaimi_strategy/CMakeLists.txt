@@ -146,6 +146,7 @@ include_directories(
 add_executable(
   kaimi_strategy_node
   src/FetchPrecachedSample.cpp
+  src/GoHome.cpp
   src/IsHealthy.cpp
   src/kaimi_strategy_node.cpp
   src/KaimiImu.cpp

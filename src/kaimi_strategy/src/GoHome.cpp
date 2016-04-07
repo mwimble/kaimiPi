@@ -1,27 +1,27 @@
 #include <ros/ros.h>
 #include <unistd.h>
 #include "KaimiImu.h"
-#include "FetchPrecachedSample.h"
+#include "GoHome.h"
 
 using namespace std;
 
-FetchPrecachedSample::FetchPrecachedSample() {
+GoHome::GoHome() {
 	cmdVelPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 	currentStrategyPub = nh.advertise<std_msgs::String>("current_stragety", 1, true /* latched */);
 	lastReportedStrategy = strategyHasntStarted;
 	publishCurrentStragety(strategyHasntStarted);
 }
 
-FetchPrecachedSample& FetchPrecachedSample::Singleton() {
-	static FetchPrecachedSample singleton_;
+GoHome& GoHome::Singleton() {
+	static GoHome singleton_;
 	return singleton_;
 }
 
-string FetchPrecachedSample::name() {
-	return string("FetchPrecachedSample");
+string GoHome::name() {
+	return string("GoHome");
 }
 
-void FetchPrecachedSample::publishCurrentStragety(string strategy) {
+void GoHome::publishCurrentStragety(string strategy) {
 	std_msgs::String msg;
 	msg.data = strategy;
 	if (strategy != lastReportedStrategy) {
@@ -30,59 +30,48 @@ void FetchPrecachedSample::publishCurrentStragety(string strategy) {
 	}
 }
 
-// ##### TODO If was approaching via near-field and sample disappears, back up a bit.
+// ##### TODO If was approaching via near-field and home disappears, back up a bit.
 
-KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyContext) {
-	static const int DESIRED_Y_FROM_BOTTOM = 3;
+KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
+	static const int DESIRED_Y_FROM_BOTTOM = 30;
 	static const int DESIRED_Y_TOLERANCE = 5;
 	static const int DESIRED_X_TOLERANCE = 5;
 
 	RESULT_T result = FATAL;
 
-	if (!strategyContext->lookingForPrecachedSample) {
+	if (!strategyContext->lookingForHome) {
 		result = SUCCESS;
 		return result;
 	}
 
-	strategyContext->precachedSampleIsVisibleNearField = KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
-	strategyContext->precachedSampleIsVisibleMidField = !strategyContext->movingViaMidfieldCamera && KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
+	strategyContext->homeIsVisibleNearField = KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
+	strategyContext->homeIsVisibleMidField = !strategyContext->movingViaMidfieldCamera && KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
 
 	if (strategyContext->needToTurn180) {
 		publishCurrentStragety(strategyTurning180);
 		if (abs(KaimiImu::Singleton().yaw()) < 3.0) { //#####
-			ROS_INFO("[FetchPrecachedSample::tick] Executing 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
+			ROS_INFO("[GoHome::tick] Executing 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
 			cmdVel.linear.x = 0;
 			cmdVel.angular.z = 0.5;
 			cmdVelPub.publish(cmdVel);
 			result = RUNNING;
 		} else {
 			strategyContext->needToTurn180 = false;
+			publishCurrentStragety("!!! DONE !!!"); //#####
 			cmdVel.linear.x = 0;
 			cmdVel.angular.z = 0.0;
 			cmdVelPub.publish(cmdVel);
-			strategyContext->lookingForHome = true;
+			strategyContext->lookingForHome = false;
 			result = SUCCESS;
-			ROS_INFO("[FetchPrecachedSample::tick] COMPLETION of 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
+			ROS_INFO("[GoHome::tick] COMPLETION of 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
 		}
 
 		return result;
 	}
 
-	if (strategyContext->precachedSampleFetched) {
-		publishCurrentStragety(strategySuccess);
-		ROS_INFO("[FetchPrecachedSample::tick] precachedSampleFetched, SUCCESS");
-		result = SUCCESS;
-	} else if (strategyContext->atPrecachedSample) {
-		// Need to  pick up sample
-		ROS_INFO_STREAM("[FetchPrecachedSample::tick] atPrecachedSample");
-		publishCurrentStragety(strategyPickingUpSample);
-		//##### TODO Need to pick up sample.
-		strategyContext->needToTurn180 = true;
-		strategyContext->lookingForPrecachedSample = false;
-		result = SUCCESS;
-	} else if (strategyContext->precachedSampleIsVisibleNearField) {
-		// Move towards sample using nearfield camera.
-		publishCurrentStragety(strategyMovingTowardsSampleViaNearfieldCamera);
+	if (strategyContext->homeIsVisibleNearField) {
+		// Move towards home using nearfield camera.
+		publishCurrentStragety(strategyMovingTowardsHomeViaNearfieldCamera);
 
 		double zVel = 0.0;
 		double xVel = 0.0;
@@ -110,9 +99,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		int desiredY = KaimiNearField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
 		int yDelta = abs(KaimiNearField::Singleton().y() - desiredY);
 
-		strategyContext->atPrecachedSample = (xDelta < DESIRED_X_TOLERANCE) && (yDelta < DESIRED_Y_TOLERANCE);
-
-		ROS_INFO_STREAM("[FetchPrecachedSample::tick] NearField Need to move towards sample, x:"
+		ROS_INFO_STREAM("[GoHome::tick] NearField Need to move towards home, x:"
 				<< KaimiNearField::Singleton().x()
 				<< ", y: "
 				<< KaimiNearField::Singleton().y()
@@ -135,9 +122,9 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 
 		result = RUNNING; // TODO Finish strategy.
-	} else if (strategyContext->precachedSampleIsVisibleMidField) {
-		// Move towards sample using midfield camera.
-		publishCurrentStragety(strategyMovingTowardsSampleViaMidfieldCamera);
+	} else if (strategyContext->homeIsVisibleMidField) {
+		// Move towards home using midfield camera.
+		publishCurrentStragety(strategyMovingTowardsHomeViaMidfieldCamera);
 		strategyContext->movingViaMidfieldCamera = true;
 
 		double zVel = 0.0;
@@ -167,9 +154,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		int desiredY = KaimiNearField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
 		int yDelta = abs(KaimiNearField::Singleton().y() - desiredY);
 
-		//strategyContext->atPrecachedSample = (xDelta < DESIRED_X_TOLERANCE) && (yDelta < DESIRED_Y_TOLERANCE);
-
-		ROS_INFO_STREAM("[FetchPrecachedSample::tick] MidField Need to move towards sample, x:"
+		ROS_INFO_STREAM("[GoHome::tick] MidField Need to move towards home, x:"
 				<< KaimiNearField::Singleton().x()
 				<< ", y: "
 				<< KaimiNearField::Singleton().y()
@@ -193,8 +178,8 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 		result = RUNNING; // TODO Finish strategy.
 	} else if (strategyContext->movingViaMidfieldCamera) {
-		// Move for 1 second towards sample using the midfield camera.
-		publishCurrentStragety(strategyMovingTowardsSampleViaMidfieldCamera);
+		// Move for 1 second towards home using the midfield camera.
+		publishCurrentStragety(strategyMovingTowardsHomeViaMidfieldCamera);
 		cmdVelPub.publish(strategyContext->cmdVel);
 
 		int xCenter = KaimiNearField::Singleton().cols() / 2;
@@ -204,7 +189,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		bool shouldHaveBeenSeenByNearField = (xDelta < DESIRED_X_TOLERANCE) && (yDelta < DESIRED_Y_TOLERANCE);
 
 		if (shouldHaveBeenSeenByNearField) {
-			ROS_WARN("[FetchPrecachedSample::tick] MIDFIELD MOVEMENT SHOULD HAVE CAUSED NEARFIELD TO SEE SAMPLE BY NOW");
+			ROS_WARN("[GoHome::tick] MIDFIELD MOVEMENT SHOULD HAVE CAUSED NEARFIELD TO SEE HOME BY NOW");
 			strategyContext->movingViaMidfieldCamera = false;
 			result = FAILED;
 		} else {
@@ -224,24 +209,23 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 			}
 		}
 	} else {
-		// Precached sample is not visible.
-		publishCurrentStragety(strategyNoSampleSeen);
+		// Home is not visible.
+		publishCurrentStragety(strategyNoHomeSeen);
 
 		// ##### TODO Move forward blindly.
 		// ##### TODO If was previously visible, try to find it again.
 
-		ROS_INFO_STREAM("[FetchPrecachedSample::tick] precached sample is not visible");
+		ROS_INFO_STREAM("[GoHome::tick] home is not visible");
 		result = FAILED; // TODO Finish strategy.
 	}
 
 	return result;
 }
 
-const string FetchPrecachedSample::strategyHasntStarted = "FetchPrecachedSample: Strategy hasn't started";
-const string FetchPrecachedSample::strategyMovingTowardsSampleViaMidfieldCamera = "FetchPrecachedSample: Moving towards sample via midfield camera";
-const string FetchPrecachedSample::strategyMovingTowardsSampleViaNearfieldCamera = "FetchPrecachedSample: Moving towards sample via nearfield camera";
-const string FetchPrecachedSample::strategyNoSampleSeen = "FetchPrecachedSample:: No target seen";
-const string FetchPrecachedSample::strategyPickingUpSample = "FetchPrecachedSample: Picking up sample";
-const string FetchPrecachedSample::strategySuccess = "FetchPrecachedSample: SUCCESS";
-const string FetchPrecachedSample::strategyTurning180 = "FetchPrecachedSample: Turnning 180 degrees";
+const string GoHome::strategyHasntStarted = "GoHome: Strategy hasn't started";
+const string GoHome::strategyMovingTowardsHomeViaMidfieldCamera = "GoHome: Moving towards home via midfield camera";
+const string GoHome::strategyMovingTowardsHomeViaNearfieldCamera = "GoHome: Moving towards home via nearfield camera";
+const string GoHome::strategyNoHomeSeen = "GoHome:: No target seen";
+const string GoHome::strategySuccess = "GoHome: SUCCESS";
+const string GoHome::strategyTurning180 = "GoHome: Turnning 180 degrees";
 
