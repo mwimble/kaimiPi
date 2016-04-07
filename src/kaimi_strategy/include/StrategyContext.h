@@ -11,6 +11,8 @@ public:
 	*/
 	bool atPrecachedSample;						// True => Arrived at precached sample, ready to retrieve.
 
+	bool lookingForPrecachedSample;				// True => Trying to find the precached sample;
+
 	bool needToTurn180;							// True => Need to turn 180 degrees.
 
 	bool precachedSampleFetched;				// True => Have picked up (not necessarily delivered) the precached sample.

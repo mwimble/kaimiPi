@@ -30,15 +30,17 @@ void FetchPrecachedSample::publishCurrentStragety(string strategy) {
 	}
 }
 
+// ##### TODO If was approaching via near-field and sample disappears, back up a bit.
+
 KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyContext) {
-	static const int DESIRED_Y_FROM_BOTTOM = 15;
+	static const int DESIRED_Y_FROM_BOTTOM = 3;
 	static const int DESIRED_Y_TOLERANCE = 5;
 	static const int DESIRED_X_TOLERANCE = 5;
 
 	RESULT_T result = FATAL;
 
-	strategyContext->precachedSampleIsVisibleNearField = KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
-	strategyContext->precachedSampleIsVisibleMidField = !strategyContext->movingViaMidfieldCamera && KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
+	strategyContext->precachedSampleIsVisibleNearField = strategyContext->lookingForPrecachedSample && KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
+	strategyContext->precachedSampleIsVisibleMidField = strategyContext->lookingForPrecachedSample && !strategyContext->movingViaMidfieldCamera && KaimiNearField::Singleton().found() && (KaimiNearField::Singleton().x() != 0) && (KaimiNearField::Singleton().y() != 0);
 
 	if (strategyContext->needToTurn180) {
 		publishCurrentStragety(strategyTurning180);
@@ -64,12 +66,13 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		publishCurrentStragety(strategySuccess);
 		ROS_INFO("[FetchPrecachedSample::tick] precachedSampleFetched, SUCCESS");
 		result = SUCCESS;
-	} else if (strategyContext->atPrecachedSample) {
+	} else if (strategyContext->atPrecachedSample && strategyContext->lookingForPrecachedSample) {
 		// Need to  pick up sample
 		ROS_INFO_STREAM("[FetchPrecachedSample::tick] atPrecachedSample");
 		publishCurrentStragety(strategyPickingUpSample);
 		//##### TODO Need to pick up sample.
-		strategyContext->needToTurn180;
+		strategyContext->needToTurn180 = true;
+		strategyContext->lookingForPrecachedSample = false;
 		result = SUCCESS;
 	} else if (strategyContext->precachedSampleIsVisibleNearField) {
 		// Move towards sample using nearfield camera.

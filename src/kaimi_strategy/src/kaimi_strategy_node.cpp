@@ -22,30 +22,15 @@ void logIfChanged(int id, const char* message) {
 vector<KaimiStrategyFn*> behaviors;
 
 int main(int argc, char** argv) {
-	static const double VEL_FAR_LEFT = 0.4;
-	static const double VEL_LEFT = 0.3;
-	static const double VEL_FAR_RIGHT = -0.4;
-	static const double VEL_RIGHT = -0.3;
-
 	ros::init(argc, argv, "kaimi_strategy_node");
-	ros::NodeHandle nh;
-	ros::Publisher cmdVelPub;
-	geometry_msgs::Twist cmdVel;
 	KaimiNearField& kaimiNearField = KaimiNearField::Singleton();
 	KaimiMidField& kaimiMidField = KaimiMidField::Singleton();
 	KaimiImu& kaimiImu = KaimiImu::Singleton();
 
 	ros::Rate rate(20); // Loop rate
 
-	// If near field not found, did we previously see it as we were
-	// advancing very near to it?
-	// bool wasAdvancingOnVeryNear = false;
-
-	// bool printedNoSampleFound = false;
-
-	cmdVelPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-
 	StrategyContext* strategyContext = new StrategyContext();
+	strategyContext->lookingForPrecachedSample = true;
 	behaviors.push_back(&IsHealthy::Singleton());
 	behaviors.push_back(&FetchPrecachedSample::Singleton());
 
