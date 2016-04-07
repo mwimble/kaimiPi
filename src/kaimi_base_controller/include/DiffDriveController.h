@@ -64,6 +64,8 @@ private:
 	void commandTimeoutHandler();
 	boost::thread* commandTimeoutThread;
 
+	void emptyCache();
+	
 	// Set voltage via a DAC.
 	// Input:
 	//		fd 		Handle to DAC.

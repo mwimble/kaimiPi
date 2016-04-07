@@ -11,15 +11,32 @@
 
 class FetchPrecachedSample : public KaimiStrategyFn {
 private:
+	// For logging current strategy.
+	static const string strategyHasntStarted;
+	static const string strategyMovingTowardsSampleViaMidfieldCamera;
+	static const string strategyMovingTowardsSampleViaNearfieldCamera;
+	static const string strategyNoSamplSeen;
+	static const string strategyPickingUpSample;
+	static const string strategySuccess;
+	static const string strategyTurning180;
+
+	// For sending robot movement commands.
 	geometry_msgs::Twist cmdVel;
 
+	// Topic to publish robot movements.
 	ros::Publisher cmdVelPub;
 
-	KaimiMidField* kaimiMidField;
+	// Topic to publish current strategy.
+	ros::Publisher currentStrategyPub;
 
-	KaimiNearField* kaimiNearField;
-
+	// ROS node handle.
 	ros::NodeHandle nh;
+
+	// To help log strategy only when it changes.
+	string lastReportedStrategy;
+
+	// Publish current strategy (if changed).
+	void publishCurrentStragety(string strategy);
 
 	// Singleton pattern.
 	FetchPrecachedSample();

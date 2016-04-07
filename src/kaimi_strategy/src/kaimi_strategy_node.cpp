@@ -3,6 +3,7 @@
 
 #include "FetchPrecachedSample.h"
 #include "IsHealthy.h"
+#include "KaimiImu.h"
 #include "KaimiMidField.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
 	geometry_msgs::Twist cmdVel;
 	KaimiNearField& kaimiNearField = KaimiNearField::Singleton();
 	KaimiMidField& kaimiMidField = KaimiMidField::Singleton();
+	KaimiImu& kaimiImu = KaimiImu::Singleton();
 
 	ros::Rate rate(20); // Loop rate
 
@@ -47,36 +49,37 @@ int main(int argc, char** argv) {
 	behaviors.push_back(&IsHealthy::Singleton());
 	behaviors.push_back(&FetchPrecachedSample::Singleton());
 
+strategyContext->needToTurn180 = true; //#####
 	while (ros::ok()) {
 		try { // Emplement Sequence behavior
 			rate.sleep();
 			ros::spinOnce();
 
-			ROS_INFO_STREAM("--- ---- ---- ---- Begin of strategy loop ---- ---- ---- ----");
+			//ROS_INFO_STREAM("--- ---- ---- ---- Begin of strategy loop ---- ---- ---- ----");
 			for(vector<KaimiStrategyFn*>::iterator it = behaviors.begin(); it != behaviors.end(); ++it) {
 				KaimiStrategyFn::RESULT_T result = ((*it)->tick)(strategyContext);
 				if (result == KaimiStrategyFn::RESTART_LOOP) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", RESTART_LOOP result, restarting");
+					//ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", RESTART_LOOP result, restarting");
 					throw new StrategyException("RESTART_LOOP");
 				}
 
 				if (result == KaimiStrategyFn::FATAL) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", FATAL result, exiting");
+					//ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", FATAL result, exiting");
 					return -1;
 				}
 
 				if (result == KaimiStrategyFn::RUNNING) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] function " << ((*it)->name()) << ", RUNNING, restarting");
+					//ROS_INFO_STREAM("[kaimi_strategy_node] function " << ((*it)->name()) << ", RUNNING, restarting");
 					throw new StrategyException("RESTART_LOOP");
 				}
 
 				if (result == KaimiStrategyFn::SUCCESS) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", SUCCESS result, continuing");
+					//ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", SUCCESS result, continuing");
 					continue;
 				}
 
 				if (result == KaimiStrategyFn::FAILED) {
-					ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", FAILED result, aborting");
+					//ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", FAILED result, aborting");
 					break;
 				}
 			}

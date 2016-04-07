@@ -45,7 +45,7 @@ void DiffDriveController::commandTimeoutHandler() {
 
 		if (duration.total_milliseconds() > 200) {
 			if (!isStopped) { //#####
-				ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
+				//OS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
 				stop();
 				isStopped = true;
 			}
@@ -57,11 +57,21 @@ void DiffDriveController::commandTimeoutHandler() {
 	stop();
 }
 
+void DiffDriveController::emptyCache() {
+	while (!commandQueue_.empty()) {
+		Command command;
+		commandQueue_.pop(command);
+		queueLength_--;
+	}
+}
+
 void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMessage) {
 	if (ros::ok()) {
 		if (paused()) {
 			if (!printedPaused_) {
-				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] Robot paused, command dropped");
+				emptyCache();
+				stop();
+				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] Robot paused, all commands dropped");
 				printedPaused_ = true;
 			}
 		// } else if (queueLength_ > 5) {
@@ -76,11 +86,7 @@ void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMess
 		} else {
 			if (queueLength_ > 5) {
 				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] queue too big, emptying");
-				while (!commandQueue_.empty()) {
-					Command command;
-					commandQueue_.pop(command);
-					queueLength_--;
-				}
+				emptyCache();
 			}
 
 			printedPaused_ = false;
@@ -112,6 +118,8 @@ void DiffDriveController::commandExecutionDoWork() {
 	while (ros::ok()) {
 		if (paused()) {
 			if (!printedPaused) {
+				stop();
+				emptyCache();
 				ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] Robot paused, no command dequeued");
 				printedPaused = true;
 			}

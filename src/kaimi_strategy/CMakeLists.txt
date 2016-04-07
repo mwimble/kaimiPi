@@ -148,6 +148,7 @@ add_executable(
   src/FetchPrecachedSample.cpp
   src/IsHealthy.cpp
   src/kaimi_strategy_node.cpp
+  src/KaimiImu.cpp
   src/KaimiMidField.cpp
   src/KaimiNearField.cpp
   src/KaimiStrategyFn.cpp

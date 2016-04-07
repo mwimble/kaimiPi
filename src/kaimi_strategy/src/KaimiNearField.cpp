@@ -20,7 +20,7 @@ static void * KaimiNearFieldFindObjectTimerRoutine(const boost::system::error_co
 	time_duration timeSinceLastFound = now - KaimiNearField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
 	if (millisecondsSinceLastReport > 500) {
-		ROS_INFO("[KaimiNearFieldFindObjectTimerRoutine] no object found in last 500 ms");
+		//ROS_INFO("[KaimiNearFieldFindObjectTimerRoutine] no object found in last 500 ms");
 		KaimiNearField::Singleton().setNotFound();
 	}
 
@@ -53,7 +53,7 @@ void* kaimiNearFieldNearFieldHeartbeatFunction(void* singleton) {
 
 void KaimiNearField::topicCb(const std_msgs::String& msg) {
 	// NearCamera:Found;LEFT-RIGHT:LR OK;FRONT-BACK:VERY NEAR;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
-	ROS_INFO("[KaimiNearField::topicCb] Message: %s", msg.data.c_str());
+	//ROS_INFO("[KaimiNearField::topicCb] Message: %s", msg.data.c_str());
 	
 	char localStr[strlen(msg.data.c_str()) + 1];
 	strcpy(localStr, msg.data.c_str());
