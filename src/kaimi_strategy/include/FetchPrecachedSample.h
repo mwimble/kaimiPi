@@ -19,6 +19,8 @@ private:
 	static const string strategyPickingUpSample;
 	static const string strategySuccess;
 	static const string strategyTurning180;
+	static const string strategyWaitingForPauseOff;
+	static const string strategyWaitingForPauseOn;
 
 	// For sending robot movement commands.
 	geometry_msgs::Twist cmdVel;

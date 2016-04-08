@@ -51,7 +51,7 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 
 	if (strategyContext->needToTurn180) {
 		publishCurrentStragety(strategyTurning180);
-		if (abs(KaimiImu::Singleton().yaw()) < 3.0) { //#####
+		if (abs(KaimiImu::Singleton().yaw() - strategyContext->startYaw) > 1.5) {
 			ROS_INFO("[GoHome::tick] Executing 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
 			cmdVel.linear.x = 0;
 			cmdVel.angular.z = 0.5;
@@ -75,6 +75,7 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 		// Need to turn around, for show.
 		ROS_INFO_STREAM("[GoHome::tick] atHome");
 		strategyContext->needToTurn180 = true;
+		strategyContext->startYaw = KaimiImu::Singleton().yaw();
 		result = SUCCESS;
 	} else if (strategyContext->homeIsVisibleNearField) {
 		// Move towards home using nearfield camera.
@@ -106,7 +107,7 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 			strategyContext->countXStill = 0;
 		}
 
-		if (abs(zVel) < strategyContext->minZ) {
+		if ((zVel != 0.0) && (abs(zVel) < strategyContext->minZ)) {
 			zVel = zVel >= 0 ? strategyContext->minZ : -strategyContext->minZ;
 		}
 
@@ -130,7 +131,7 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 			ROS_INFO("Y delta>=1: %7.2f, lastY: %7.2f, y: %7.2f", abs(strategyContext->lastY - y), strategyContext->lastY, y);
 		}
 
-		if (abs(xVel) < strategyContext->minX) {
+		if ((xVel != 0.0) && (abs(xVel) < strategyContext->minX)) {
 			ROS_INFO("override xVel %7.4f with minX: %7.4f", xVel,  strategyContext->minX);
 			xVel = xVel >= 0 ? strategyContext->minX : -strategyContext->minX;
 		}
@@ -149,6 +150,11 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 		int xDelta = abs(x - xCenter);
 		int desiredY = KaimiNearField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
 		int yDelta = abs(y - desiredY);
+
+		if (y > desiredY) {
+			xVel = 0.0;
+			ROS_INFO("Gone past Y");
+		}
 
 		strategyContext->atHome = (xDelta < DESIRED_X_TOLERANCE) &&
 			((yDelta < DESIRED_Y_TOLERANCE) || (y > desiredY));

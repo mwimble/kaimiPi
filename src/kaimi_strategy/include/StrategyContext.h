@@ -11,6 +11,8 @@ public:
 	*/
 	bool atHome;								// True => Arrived at home.
 
+	geometry_msgs::Twist cmdVel;				// For use in repeating command.
+
 	bool atPrecachedSample;						// True => Arrived at precached sample, ready to retrieve.
 
 	bool homeIsVisibleNearField;				// True => Near field camera sees home.
@@ -45,11 +47,13 @@ public:
 
 	bool precachedSampleFetched;				// True => Have picked up (not necessarily delivered) the precached sample.
 
+	bool precachedSampleFoundNearField;			// True => Have seen the precached sample in the near field camera.
+
 	bool precachedSampleIsVisibleNearField;		// True => Near field camera sees precached sample.
 
 	bool precachedSampleIsVisibleMidField;		// True => Mid field camera sees precached sample.
 
-	geometry_msgs::Twist cmdVel;				// For use in repeating command.
+	double startYaw;							// To compute how much of a turn has been made.
 
 	bool waitingPauseOff;	// Waiting for pause to be released.
 	bool waitingPauseOn;	// Waiting for pause to be set.a

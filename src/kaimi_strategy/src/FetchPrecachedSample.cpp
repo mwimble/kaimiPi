@@ -27,7 +27,7 @@ void FetchPrecachedSample::pausedCallback(const std_msgs::String& msg) {
 		isPaused = false;
 	}
 
-	ROS_INFO("[FetchPrecachedSample::pausedCallback] paused: %d", isPaused);
+//	ROS_INFO("[FetchPrecachedSample::pausedCallback] paused: %d", isPaused);
 }
 
 string FetchPrecachedSample::name() {
@@ -48,6 +48,10 @@ void FetchPrecachedSample::publishCurrentStragety(string strategy) {
 // ##### TODO When sample found, what for pause on/pause off before continuing.
 
 KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyContext) {
+	// Desired Y distance from front of plastic plate to back of precached target = 12.75 inches.
+	// x: 449, y: 437
+	static const int DESIRED_X = 449;
+	static const int DESIRED_Y = 437;
 	static const int DESIRED_Y_FROM_BOTTOM = 35;
 	static const int DESIRED_Y_TOLERANCE = 5;
 	static const int DESIRED_X_TOLERANCE = 5;
@@ -64,7 +68,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 	if (strategyContext->needToTurn180) {
 		publishCurrentStragety(strategyTurning180);
-		if (abs(KaimiImu::Singleton().yaw()) < 3.0) { //#####
+		if (abs(KaimiImu::Singleton().yaw() - strategyContext->startYaw) > 1.5) {
 			ROS_INFO("[FetchPrecachedSample::tick] Executing 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
 			cmdVel.linear.x = 0;
 			cmdVel.angular.z = 0.5;
@@ -87,7 +91,25 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		return result;
 	}
 
-	if (strategyContext->precachedSampleFetched) {
+	if (strategyContext->waitingPauseOff) {
+		publishCurrentStragety(strategyWaitingForPauseOff);
+		if (!isPaused) {
+			strategyContext->waitingPauseOff = true;
+			strategyContext->needToTurn180 = true;
+		}
+
+		result = RUNNING;
+		return result;
+	} else if (strategyContext->waitingPauseOn) {
+		publishCurrentStragety(strategyWaitingForPauseOn);
+		if (isPaused) {
+			strategyContext->waitingPauseOn = false;
+			strategyContext->waitingPauseOff = true;
+		}
+
+		result = RUNNING;
+		return result;
+	} else if (strategyContext->precachedSampleFetched) {
 		publishCurrentStragety(strategySuccess);
 		ROS_INFO("[FetchPrecachedSample::tick] precachedSampleFetched, SUCCESS");
 		result = SUCCESS;
@@ -96,11 +118,21 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		ROS_INFO_STREAM("[FetchPrecachedSample::tick] atPrecachedSample");
 		publishCurrentStragety(strategyPickingUpSample);
 		//##### TODO Need to pick up sample.
-		strategyContext->needToTurn180 = true;
+		strategyContext->waitingPauseOn = true;
+		//strategyContext->needToTurn180 = true;
+		strategyContext->startYaw = KaimiImu::Singleton().yaw();
 		result = SUCCESS;
+	// } else if (!strategyContext->precachedSampleIsVisibleNearField && strategyContext->precachedSampleFoundNearField) {
+	// 	// Sample has been lost, back up a bit.
+	// 	cmdVel.linear.x = -0.3;
+	// 	cmdVel.angular.z = 0.0;
+	// 	cmdVelPub.publish(cmdVel);
+	// 	ROS_INFO("[FetchPrecachedSample::tick] Sample lost, backing up");
 	} else if (strategyContext->precachedSampleIsVisibleNearField) {
 		// Move towards sample using nearfield camera.
 		publishCurrentStragety(strategyMovingTowardsSampleViaNearfieldCamera);
+
+		strategyContext->precachedSampleFoundNearField = true;
 
 		if (strategyContext->minX < 0.11) {
 			// Quick fix.
@@ -113,10 +145,10 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		double xVel = 0.0;
 		int xCenter = KaimiNearField::Singleton().cols() / 2;
 
-		if (abs(x - xCenter) > DESIRED_X_TOLERANCE) {
+		if (abs(x - DESIRED_X) > DESIRED_X_TOLERANCE) {
 			// TODO compute angle rather than pixel offset
 			// Need to rotate to center
-			zVel = ((xCenter - x) * (0.2 / xCenter));
+			zVel = ((DESIRED_X - x) * (0.3 / DESIRED_X));
 		}
 
 		xVel = (0.6 / KaimiNearField::Singleton().rows()) * (KaimiNearField::Singleton().rows() - y);
@@ -133,7 +165,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 			strategyContext->countXStill = 0;
 		}
 
-		if (abs(zVel) < strategyContext->minZ) {
+		if ((zVel != 0.0) && (abs(zVel) < strategyContext->minZ)) {
 			zVel = zVel >= 0 ? strategyContext->minZ : -strategyContext->minZ;
 		}
 
@@ -157,12 +189,12 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 			ROS_INFO("Y delta>=1: %7.2f, lastY: %7.2f, y: %7.2f", abs(strategyContext->lastY - y), strategyContext->lastY, y);
 		}
 
-		if (abs(xVel) < strategyContext->minX) {
+		if ((xVel != 0.0) && (abs(xVel) < strategyContext->minX)) {
 			ROS_INFO("override xVel %7.4f with minX: %7.4f", xVel,  strategyContext->minX);
 			xVel = xVel >= 0 ? strategyContext->minX : -strategyContext->minX;
 		}
 
-		static const double maxXVel = 0.50;
+		static const double maxXVel = 0.30;
 
 		if (abs(xVel) > maxXVel) xVel = xVel >= 0.0 ? maxXVel : -maxXVel;
 
@@ -173,12 +205,17 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		cmdVel.angular.z = zVel;
 		cmdVelPub.publish(cmdVel);
 
-		int xDelta = abs(x - xCenter);
+		int xDelta = abs(x - DESIRED_X);
 		int desiredY = KaimiNearField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
-		int yDelta = abs(y - desiredY);
+		int yDelta = abs(y - DESIRED_Y);
+
+		if (y > DESIRED_Y) {
+			xVel = 0.0;
+			ROS_INFO("Gone past Y");
+		}
 
 		strategyContext->atPrecachedSample = (xDelta < DESIRED_X_TOLERANCE) &&
-			((yDelta < DESIRED_Y_TOLERANCE) || (y > desiredY));
+			((yDelta < DESIRED_Y_TOLERANCE) || (y > DESIRED_Y));
 
 		ROS_INFO_STREAM("[FetchPrecachedSample::tick] NearField Need to move towards sample, x:"
 				<< x
@@ -189,13 +226,13 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 				<< ", zVel: "
 				<< zVel
 				<< ", desired x: "
-				<< xCenter
+				<< DESIRED_X
 				<< ", xDelta ("
 				<< xDelta
 				<< ") needs to be under "
 				<< DESIRED_X_TOLERANCE
 				<< ", desired y: "
-				<< desiredY
+				<< DESIRED_Y
 				<< ", yDelta ("
 				<< yDelta
 				<< ") needs to be under "
@@ -314,4 +351,5 @@ const string FetchPrecachedSample::strategyNoSampleSeen = "FetchPrecachedSample:
 const string FetchPrecachedSample::strategyPickingUpSample = "FetchPrecachedSample: Picking up sample";
 const string FetchPrecachedSample::strategySuccess = "FetchPrecachedSample: SUCCESS";
 const string FetchPrecachedSample::strategyTurning180 = "FetchPrecachedSample: Turnning 180 degrees";
-
+const string FetchPrecachedSample::strategyWaitingForPauseOff = "FetchPrecachedSample: Waiting for Pause OFF";
+const string FetchPrecachedSample::strategyWaitingForPauseOn = "FetchPrecachedSample: Waiting for Pause ON";
