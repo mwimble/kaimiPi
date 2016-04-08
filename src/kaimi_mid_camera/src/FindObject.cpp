@@ -40,7 +40,7 @@ extern FindObject* findObject;
 //}
 
 void FindObject::imageCb(Mat& image) {
-    ROS_INFO("FindObject::imageCb] mage.rows: %d, image.cols: %d", image.rows, image.cols);
+    //ROS_INFO("FindObject::imageCb] image.rows: %d, image.cols: %d", image.rows, image.cols);
     if (1 /*image.rows > 60 && image.cols > 60*/) {
     	Mat imgHSV;
 		cvtColor(image, imgHSV, COLOR_BGR2HSV); // Convert the captured frame from BGR to HSV
@@ -66,7 +66,7 @@ void FindObject::imageCb(Mat& image) {
 		findContours(tempImage, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 		vector<Rect> boundRect( contours.size() );
 		vector<vector<Point> > contours_poly( contours.size() );
-		ROS_INFO("Thresholded iLowH: %d, iHighH: %d, iLowS: %d, iHighS: %d, iLowV: %d, iHighV: %d, countours: %d", iLowH, iHighH, iLowS, iHighS, iLowV, iHighV, contours.size());
+		//ROS_INFO("Thresholded iLowH: %d, iHighH: %d, iLowS: %d, iHighS: %d, iLowV: %d, iHighV: %d, countours: %d", iLowH, iHighH, iLowS, iHighS, iLowV, iHighV, contours.size());
 		Point2f center;
 		float radius;
 

@@ -31,6 +31,7 @@ void GoHome::publishCurrentStragety(string strategy) {
 }
 
 // ##### TODO If was approaching via near-field and home disappears, back up a bit.
+// ##### TODI If trending towards sample and it moves significantly, don't track new position.
 
 KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 	static const int DESIRED_Y_FROM_BOTTOM = 30;
@@ -82,15 +83,48 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 			// Need to rotate to center
 			if (KaimiNearField::Singleton().x() > xCenter) {
 				// Need to rotate right.
-				zVel = -0.1 - ((KaimiNearField::Singleton().x() - xCenter) * (0.2 / xCenter));
+				zVel = -0.0 - ((KaimiNearField::Singleton().x() - xCenter) * (0.1 / xCenter));
 			} else {
 				// Need to rotate left.
-				zVel = 0.1 + ((xCenter - KaimiNearField::Singleton().x()) * (0.2 / xCenter));
+				zVel = 0.0 + ((xCenter - KaimiNearField::Singleton().x()) * (0.1 / xCenter));
 			}
 		}
 
-		xVel = (0.5 / KaimiNearField::Singleton().rows()) * (KaimiNearField::Singleton().rows() - KaimiNearField::Singleton().y());
-		if (xVel < 0.15) xVel = 0.15;
+		xVel = (0.2 / KaimiNearField::Singleton().rows()) * (KaimiNearField::Singleton().rows() - KaimiNearField::Singleton().y());
+
+		if ((strategyContext->lastZVel != 0) && (abs(strategyContext->lastX - KaimiNearField::Singleton().x()) < 1)) {
+			// Last Z velocity should have rotated and didn't.
+			if (abs(zVel) <= abs(strategyContext->lastZVel)) {
+				// New Z velocity magnitude is less than or equal to previous, so it's unlikely to cause a change.
+				strategyContext->minZ = abs(strategyContext->lastZVel) + 0.5;
+				zVel = zVel >= 0 ? strategyContext->minZ : -strategyContext->minZ;
+			}
+		}
+
+		static const double maxZVel = 0.25;
+
+		if (abs(zVel) > maxZVel) zVel = zVel >= 0.0 ? maxZVel : -maxZVel;
+
+		strategyContext->lastZVel = zVel;
+
+		if ((strategyContext->lastXVel != 0) && (abs(strategyContext->lastY - KaimiNearField::Singleton().y()) < 1)) {
+			// Last X velocity should have moved forward or backward and didn't.
+			if (abs(xVel) <= abs(strategyContext->lastXVel)) {
+				// New X velocity magnitude is less than or equal to previous, so it's unlikely to cause a change.
+				strategyContext->minX = abs(strategyContext->lastXVel) + 0.5;
+				xVel = xVel >= 0 ? strategyContext->minX : -strategyContext->minX;
+			}
+		}
+
+		static const double maxXVel = 0.25;
+
+		if (abs(xVel) > maxXVel) xVel = xVel >= 0.0 ? maxXVel : -maxXVel;
+
+		strategyContext->lastXVel = xVel;
+
+		strategyContext->lastX = KaimiNearField::Singleton().x();
+		strategyContext->lastY = KaimiNearField::Singleton().y();
+
 		cmdVel.linear.x = xVel;
 		cmdVel.angular.z = zVel;
 		cmdVelPub.publish(cmdVel);
@@ -118,7 +152,11 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 				<< ", yDelta ("
 				<< yDelta
 				<< ") needs to be under "
-				<< DESIRED_Y_TOLERANCE);
+				<< DESIRED_Y_TOLERANCE
+				<< ", minXVel: "
+				<< strategyContext->minX
+				<< ", minZVel: "
+				<< strategyContext->minZ);
 
 
 		result = RUNNING; // TODO Finish strategy.

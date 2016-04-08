@@ -95,11 +95,11 @@ void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMess
 			command.angular  = commandMessage.angular.z;
 			command.linear = commandMessage.linear.x;
 			command.timeNsec = microsec_clock::local_time();
-			ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] New Command"
-				<< ", linear: " << command.linear
-				<< ", angular: " << command.angular
-				<< ", timeNsec: " << to_simple_string(command.timeNsec)
-				<< ", queue length will be: " << (queueLength_ + 1));
+			// ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] New Command"
+			// 	<< ", linear: " << command.linear
+			// 	<< ", angular: " << command.angular
+			// 	<< ", timeNsec: " << to_simple_string(command.timeNsec)
+			// 	<< ", queue length will be: " << (queueLength_ + 1));
 			if (!commandQueue_.push(command)) {
 				ROS_ERROR("[DiffDriveController::cmdVelCallback] UNABLE TO PUSH COMMAND");
 			} else {
@@ -157,14 +157,14 @@ void DiffDriveController::commandExecutionDoWork() {
 					float lr =  ((-command.angular * 1228) + 2034);
 					float fb = ((command.linear * 1228) + 2034);
 
-					ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] deque command. "
-						<< "linear: " << command.linear
-						<< ", angular: " << command.angular
-						<< ", timeNsec: " << to_simple_string(command.timeNsec)
-						<< ", queue now empty: " << (commandQueue_.empty() ? "TRUE" : "false")
-						<< ", queue length: " << queueLength_
-						<< ", lr: " << lr
-						<< ", fb: " << fb);
+					// ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] deque command. "
+					// 	<< "linear: " << command.linear
+					// 	<< ", angular: " << command.angular
+					// 	<< ", timeNsec: " << to_simple_string(command.timeNsec)
+					// 	<< ", queue now empty: " << (commandQueue_.empty() ? "TRUE" : "false")
+					// 	<< ", queue length: " << queueLength_
+					// 	<< ", lr: " << lr
+					// 	<< ", fb: " << fb);
 					setVoltage(fbHandle_, fb, false);
 					setVoltage(lrHandle_, lr, false);
 
