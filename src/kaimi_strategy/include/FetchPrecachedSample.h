@@ -32,6 +32,16 @@ private:
 	// ROS node handle.
 	ros::NodeHandle nh;
 
+	// Receives basePaused messages.
+	ros::Subscriber pausedSub;
+
+	// Callback for basePaused message
+	void pausedCallback(const std_msgs::String& commandMessage);
+
+	// Keeps track of whether robot is paused.
+	bool isPaused;
+
+
 	// To help log strategy only when it changes.
 	string lastReportedStrategy;
 

@@ -12,6 +12,8 @@ DiffDriveController::DiffDriveController() :
 	printedQueueTooBig_(false),
 	queueLength_(0) {
 	debugStreamName_ = "DiffDriveController";
+	pausedMsg.data = "paused";
+	notPausedMsg.data = "NOTpaused";
 	
 	wiringPiSetupSys();
 	pinMode(PAUSE_PIN, INPUT);
@@ -25,6 +27,7 @@ DiffDriveController::DiffDriveController() :
 	setVoltage(lrHandle_, STOP_VALUE, true);
 	
 	sub_command_ = nh_.subscribe("cmd_vel", 6, &DiffDriveController::cmdVelCallback, this);
+	pausePub = nh_.advertise<std_msgs::String>("basePaused", 1, true /* latched */);
 	commandTimeoutThread = new boost::thread(boost::bind(&DiffDriveController::commandTimeoutHandler, this));
 	commandExecutionThread = new boost::thread(boost::bind(&DiffDriveController::commandExecutionDoWork, this));
 }
@@ -68,6 +71,7 @@ void DiffDriveController::emptyCache() {
 void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMessage) {
 	if (ros::ok()) {
 		if (paused()) {
+			pausePub.publish(pausedMsg);
 			if (!printedPaused_) {
 				emptyCache();
 				stop();
@@ -84,6 +88,7 @@ void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMess
 
 		// 	printedQueueTooBig_ = true;
 		} else {
+			pausePub.publish(notPausedMsg);
 			if (queueLength_ > 5) {
 				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] queue too big, emptying");
 				emptyCache();
@@ -117,6 +122,7 @@ void DiffDriveController::commandExecutionDoWork() {
 	bool printedPaused = false; // To meter pause messages to log.
 	while (ros::ok()) {
 		if (paused()) {
+			pausePub.publish(pausedMsg);
 			if (!printedPaused) {
 				stop();
 				emptyCache();
@@ -124,6 +130,7 @@ void DiffDriveController::commandExecutionDoWork() {
 				printedPaused = true;
 			}
 		} else {
+			pausePub.publish(notPausedMsg);
 			printedPaused = false;
 			if (!commandQueue_.empty()) {
 				Command command;
@@ -225,3 +232,5 @@ float DiffDriveController::WHEEL_RADIUS = 0.1651; // 6.5"
 float DiffDriveController::WHEEL_SEPARATION_MULTIPLIER = 1.0;
 float DiffDriveController::WHEEL_RADIUS_MULTIPLIER = 1.0;
 
+std_msgs::String DiffDriveController::pausedMsg;
+std_msgs::String DiffDriveController::notPausedMsg;

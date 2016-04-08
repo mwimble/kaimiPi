@@ -9,11 +9,17 @@ public:
 	/*
 	* For fetching the precached sample.
 	*/
+	bool atHome;								// True => Arrived at home.
+
 	bool atPrecachedSample;						// True => Arrived at precached sample, ready to retrieve.
 
 	bool homeIsVisibleNearField;				// True => Near field camera sees home.
 
 	bool homeIsVisibleMidField;					// True => Mid field camera sees home.
+
+	int countXStill;							// Count of consecutive times X didn't change.
+
+	int countYStill;							// Count of consecutive times Y didn't change.
 
 	double lastX;								// Used to adjust minZ.
 
@@ -44,6 +50,9 @@ public:
 	bool precachedSampleIsVisibleMidField;		// True => Mid field camera sees precached sample.
 
 	geometry_msgs::Twist cmdVel;				// For use in repeating command.
+
+	bool waitingPauseOff;	// Waiting for pause to be released.
+	bool waitingPauseOn;	// Waiting for pause to be set.a
 };
 
 #endif

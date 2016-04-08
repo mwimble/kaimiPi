@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 	KaimiMidField& kaimiMidField = KaimiMidField::Singleton();
 	KaimiImu& kaimiImu = KaimiImu::Singleton();
 
-	ros::Rate rate(20); // Loop rate
+	ros::Rate rate(10); // Loop rate
 
 	StrategyContext* strategyContext = new StrategyContext();
 	strategyContext->lookingForPrecachedSample = true;
