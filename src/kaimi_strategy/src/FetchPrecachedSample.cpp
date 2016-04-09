@@ -68,13 +68,15 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 	if (strategyContext->needToTurn180) {
 		publishCurrentStragety(strategyTurning180);
-		if (abs(KaimiImu::Singleton().yaw() - strategyContext->startYaw) > 1.5) {
+		ROS_INFO("Turning 180, current yaw: %f, startYaw: %f, abs(diff): %f", KaimiImu::Singleton().yaw(), strategyContext->startYaw, abs(KaimiImu::Singleton().yaw() - strategyContext->startYaw));
+		if (abs(KaimiImu::Singleton().yaw() - strategyContext->startYaw) < 3.0) {
 			ROS_INFO("[FetchPrecachedSample::tick] Executing 180 turn. yaw: %7.2f", KaimiImu::Singleton().yaw());
 			cmdVel.linear.x = 0;
 			cmdVel.angular.z = 0.5;
 			cmdVelPub.publish(cmdVel);
 			result = RUNNING;
 		} else {
+			ROS_INFO("Turning on HOME goal, current yaw: %f, startYaw: %f, abs(diff): %f", KaimiImu::Singleton().yaw(), strategyContext->startYaw, abs(KaimiImu::Singleton().yaw() - strategyContext->startYaw));
 			strategyContext->needToTurn180 = false;
 			cmdVel.linear.x = 0;
 			cmdVel.angular.z = 0.0;
@@ -94,7 +96,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 	if (strategyContext->waitingPauseOff) {
 		publishCurrentStragety(strategyWaitingForPauseOff);
 		if (!isPaused) {
-			strategyContext->waitingPauseOff = true;
+			strategyContext->waitingPauseOff = false;
 			strategyContext->needToTurn180 = true;
 		}
 
@@ -117,7 +119,6 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		// Need to  pick up sample
 		ROS_INFO_STREAM("[FetchPrecachedSample::tick] atPrecachedSample");
 		publishCurrentStragety(strategyPickingUpSample);
-		//##### TODO Need to pick up sample.
 		strategyContext->waitingPauseOn = true;
 		//strategyContext->needToTurn180 = true;
 		strategyContext->startYaw = KaimiImu::Singleton().yaw();
@@ -134,6 +135,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 		strategyContext->precachedSampleFoundNearField = true;
 
+		/*-- Common between GoHome and FetchPrecachedSample --*/
 		if (strategyContext->minX < 0.11) {
 			// Quick fix.
 			strategyContext->minX = 0.11;
@@ -143,23 +145,21 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 		double y = KaimiNearField::Singleton().y();
 		double zVel = 0.0;
 		double xVel = 0.0;
-		int xCenter = KaimiNearField::Singleton().cols() / 2;
 
 		if (abs(x - DESIRED_X) > DESIRED_X_TOLERANCE) {
 			// TODO compute angle rather than pixel offset
 			// Need to rotate to center
-			zVel = ((DESIRED_X - x) * (0.3 / DESIRED_X));
+			zVel = ((DESIRED_X - x) * (0.6 / DESIRED_X));
 		}
 
 		xVel = (0.6 / KaimiNearField::Singleton().rows()) * (KaimiNearField::Singleton().rows() - y);
 		
-		// ##### TODO Need some sort of averaging here rather than looking for instantaneous response from last command.
 		if (abs(strategyContext->lastX - x) < 2) {
 			strategyContext->countXStill++;
 			// Last Z velocity should have rotated and didn't.
 			if (strategyContext->countXStill >= 4) {
 				// New Z velocity magnitude is less than or equal to previous, so it's unlikely to cause a change.
-				strategyContext->minZ = strategyContext->minZ+ 0.01;
+				strategyContext->minZ = strategyContext->minZ + 0.01;
 			}
 		} else {
 			strategyContext->countXStill = 0;
@@ -169,12 +169,11 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 			zVel = zVel >= 0 ? strategyContext->minZ : -strategyContext->minZ;
 		}
 
-		static const double maxZVel = 0.3;
+		static const double maxZVel = 0.5;
 
 		if (abs(zVel) > maxZVel) zVel = zVel >= 0.0 ? maxZVel : -maxZVel;
 
 
-		// ##### TODO Need some sort of averaging here rather than looking for instantaneous response from last command.
 		if (abs(strategyContext->lastY - y) < 2) {
 			strategyContext->countYStill++;
 			ROS_INFO("Y delta<1: %7.2f, lastY: %7.2f, y: %7.2f, xVel: %7.2f, minX: %7.2f, countYStill: %d", abs(strategyContext->lastY - y), strategyContext->lastY, y, xVel, strategyContext->minX, strategyContext->countYStill);
@@ -194,25 +193,25 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 			xVel = xVel >= 0 ? strategyContext->minX : -strategyContext->minX;
 		}
 
-		static const double maxXVel = 0.30;
+		static const double maxXVel = 0.20;
 
 		if (abs(xVel) > maxXVel) xVel = xVel >= 0.0 ? maxXVel : -maxXVel;
 
 		strategyContext->lastX = x;
 		strategyContext->lastY = y;
 
-		cmdVel.linear.x = xVel;
-		cmdVel.angular.z = zVel;
-		cmdVelPub.publish(cmdVel);
-
 		int xDelta = abs(x - DESIRED_X);
-		int desiredY = KaimiNearField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
 		int yDelta = abs(y - DESIRED_Y);
 
 		if (y > DESIRED_Y) {
-			xVel = 0.0;
+			xVel = -0.5;
 			ROS_INFO("Gone past Y");
 		}
+		/*--- End common section */
+
+		cmdVel.linear.x = xVel;
+		cmdVel.angular.z = zVel;
+		cmdVelPub.publish(cmdVel);
 
 		strategyContext->atPrecachedSample = (xDelta < DESIRED_X_TOLERANCE) &&
 			((yDelta < DESIRED_Y_TOLERANCE) || (y > DESIRED_Y));
@@ -244,35 +243,61 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 
 		result = RUNNING; // TODO Finish strategy.
-	} else if (0 && /*#####*/ strategyContext->precachedSampleIsVisibleMidField) {
+	} else if (0 && strategyContext->precachedSampleIsVisibleMidField) {
 		// Move towards sample using midfield camera.
 		publishCurrentStragety(strategyMovingTowardsSampleViaMidfieldCamera);
 		strategyContext->movingViaMidfieldCamera = true;
+
+		/*-- Common between GoHome and FetchPrecachedSample --*/
+		if (strategyContext->minX < 0.11) {
+			// Quick fix.
+			strategyContext->minX = 0.11;
+		}
 
 		double x = KaimiMidField::Singleton().x();
 		double y = KaimiMidField::Singleton().y();
 		double zVel = 0.0;
 		double xVel = 0.0;
-		int xCenter = KaimiMidField::Singleton().cols() / 2;
+		double desiredX = KaimiMidField::Singleton().cols() / 2.0;
 
-		if (abs(x - xCenter) > DESIRED_X_TOLERANCE) {
+		if (abs(x - desiredX) > DESIRED_X_TOLERANCE) {
 			// TODO compute angle rather than pixel offset
 			// Need to rotate to center
-			zVel = ((xCenter - x) * (0.1 / xCenter));
+			zVel = ((desiredX - x) * (0.6 / desiredX));
 		}
 
-		xVel = (0.6 / KaimiMidField::Singleton().rows()) * (KaimiMidField::Singleton().rows() - y);
-		if (xVel < 0.15) xVel = 0.15;
+		xVel = 0.2;
+		
+		if (abs(strategyContext->lastX - x) < 2) {
+			strategyContext->countXStill++;
+			// Last Z velocity should have rotated and didn't.
+			if (strategyContext->countXStill >= 4) {
+				// New Z velocity magnitude is less than or equal to previous, so it's unlikely to cause a change.
+				strategyContext->minZ = strategyContext->minZ + 0.01;
+			}
+		} else {
+			strategyContext->countXStill = 0;
+		}
+
+		if ((zVel != 0.0) && (abs(zVel) < strategyContext->minZ)) {
+			zVel = zVel >= 0 ? strategyContext->minZ : -strategyContext->minZ;
+		}
+
+		static const double maxZVel = 0.25;
+
+		if (abs(zVel) > maxZVel) zVel = zVel >= 0.0 ? maxZVel : -maxZVel;
+
+		strategyContext->lastX = x;
+		strategyContext->lastY = y;
+
+		int xDelta = abs(x - desiredX);
+
 		strategyContext->cmdVel.linear.x = xVel;
 		strategyContext->cmdVel.angular.z = zVel;
 		gettimeofday(&strategyContext->periodStart, NULL);
 
 
-		int xDelta = abs(x - xCenter);
-		int desiredY = KaimiMidField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
-		int yDelta = abs(y - desiredY);
-
-		//strategyContext->atPrecachedSample = (xDelta < DESIRED_X_TOLERANCE) && (yDelta < DESIRED_Y_TOLERANCE);
+		/*--- End common section */
 
 		ROS_INFO_STREAM("[FetchPrecachedSample::tick] MidField Need to move towards sample, x:"
 				<< x
@@ -283,31 +308,24 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 				<< ", zVel: "
 				<< zVel
 				<< ", desired x: "
-				<< xCenter
+				<< desiredX
 				<< ", xDelta ("
 				<< xDelta
 				<< ") needs to be under "
-				<< DESIRED_X_TOLERANCE
-				<< ", desired y: "
-				<< desiredY
-				<< ", yDelta ("
-				<< yDelta
-				<< ") needs to be under "
-				<< DESIRED_Y_TOLERANCE);
+				<< DESIRED_X_TOLERANCE);
 
 
-		result = RUNNING; // TODO Finish strategy.
-	} else if (strategyContext->movingViaMidfieldCamera) {
+		result = RUNNING;
+	} else if (0 && strategyContext->movingViaMidfieldCamera) {
 		// Move for 1 second towards sample using the midfield camera.
 		publishCurrentStragety(strategyMovingTowardsSampleViaMidfieldCamera);
 		cmdVelPub.publish(strategyContext->cmdVel);
 
 		double x = KaimiMidField::Singleton().x();
 		double y = KaimiMidField::Singleton().y();
-		int xCenter = KaimiMidField::Singleton().cols() / 2;
-		int xDelta = abs(x - xCenter);
-		int desiredY = KaimiMidField::Singleton().rows() - DESIRED_Y_FROM_BOTTOM;
-		int yDelta = abs(y - desiredY);
+		double desiredX = KaimiMidField::Singleton().cols() / 2.0;
+		int xDelta = abs(x - desiredX);
+		int yDelta = 800 - y;
 		bool shouldHaveBeenSeenByNearField = (xDelta < DESIRED_X_TOLERANCE) && (yDelta < DESIRED_Y_TOLERANCE);
 
 		if (shouldHaveBeenSeenByNearField) {
@@ -321,7 +339,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 			long seconds = now.tv_sec - strategyContext->periodStart.tv_sec;
 			long useconds = now.tv_usec - strategyContext->periodStart.tv_usec;
 			double totalElapsedTime = (seconds * 1.0) + (useconds / 1000000.0);
-			if (totalElapsedTime > 1.0) {
+			if (totalElapsedTime > 0.1) {
 				strategyContext->movingViaMidfieldCamera = false;
 				result = SUCCESS;
 			} else {
@@ -333,6 +351,9 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 	} else {
 		// Precached sample is not visible.
 		publishCurrentStragety(strategyNoSampleSeen);
+		strategyContext->cmdVel.linear.x = 0.2;
+		strategyContext->cmdVel.angular.z = -0.05;
+		cmdVelPub.publish(strategyContext->cmdVel);
 
 		// ##### TODO Move forward blindly.
 		// ##### TODO If was previously visible, try to find it again.

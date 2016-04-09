@@ -133,12 +133,12 @@ void FindObject::imageCb(Mat& image) {
 
 
 FindObject::FindObject() : it_(nh_),
-	iLowH(116),
-	iHighH(179),
-	iLowS(36),
-	iHighS(255),
-	iLowV(67),
-	iHighV(255),
+	iLowH(111),
+	iHighH(166),
+	iLowS(20),
+	iHighS(180),
+	iLowV(15),
+	iHighV(180),
 	contourSizeThreshold(100),
 	showWindows_(false)
 	{
@@ -149,6 +149,7 @@ FindObject::FindObject() : it_(nh_),
 	nh_.param<bool>("show_windows", showWindows_, true);
 	ROS_INFO("PARAM image_topic_name: %s", imageTopicName_.c_str());
 	ROS_INFO("PARAM show_windows: %d", showWindows_);
+	ROS_INFO("[KaimiMidCamera iLowH: %d, iHighH: %d, iLowS: %d, iHighS: %d, iLowV: %d, iHighV: %d", iLowH, iHighH, iLowS, iHighS, iLowV, iHighV);
 
 	showWindows_ = false;
 
@@ -185,7 +186,6 @@ FindObject::FindObject() : it_(nh_),
     cap.open();
 	ros::Rate rate(fps);
     while(ros::ok()) {
-        cap.grab();
         Mat imgOriginal;
 
         //bool bSuccess = cap.read(imgOriginal); // read a new frame from video
