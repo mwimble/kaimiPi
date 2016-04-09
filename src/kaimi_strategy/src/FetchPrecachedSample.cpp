@@ -243,7 +243,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 
 		result = RUNNING; // TODO Finish strategy.
-	} else if (0 && strategyContext->precachedSampleIsVisibleMidField) {
+	} else if (strategyContext->precachedSampleIsVisibleMidField) {
 		// Move towards sample using midfield camera.
 		publishCurrentStragety(strategyMovingTowardsSampleViaMidfieldCamera);
 		strategyContext->movingViaMidfieldCamera = true;
@@ -316,7 +316,7 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 
 
 		result = RUNNING;
-	} else if (0 && strategyContext->movingViaMidfieldCamera) {
+	} else if (strategyContext->movingViaMidfieldCamera) {
 		// Move for 1 second towards sample using the midfield camera.
 		publishCurrentStragety(strategyMovingTowardsSampleViaMidfieldCamera);
 		cmdVelPub.publish(strategyContext->cmdVel);
@@ -351,9 +351,9 @@ KaimiStrategyFn::RESULT_T FetchPrecachedSample::tick(StrategyContext* strategyCo
 	} else {
 		// Precached sample is not visible.
 		publishCurrentStragety(strategyNoSampleSeen);
-		strategyContext->cmdVel.linear.x = 0.2;
-		strategyContext->cmdVel.angular.z = -0.05;
-		cmdVelPub.publish(strategyContext->cmdVel);
+		// strategyContext->cmdVel.linear.x = 0.2;
+		// strategyContext->cmdVel.angular.z = 0.0;
+		// cmdVelPub.publish(strategyContext->cmdVel);
 
 		// ##### TODO Move forward blindly.
 		// ##### TODO If was previously visible, try to find it again.

@@ -192,7 +192,7 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 
 
 		result = RUNNING; // TODO Finish strategy.
-	} else if (0 && /*#####*/ strategyContext->homeIsVisibleMidField) {
+	} else if (strategyContext->homeIsVisibleMidField) {
 		// Move towards sample using midfield camera.
 		publishCurrentStragety(strategyMovingTowardsHomeViaMidfieldCamera);
 		strategyContext->movingViaMidfieldCamera = true;
@@ -265,7 +265,7 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 
 
 		result = RUNNING; // TODO Finish strategy.
-	} else if (0 && strategyContext->movingViaMidfieldCamera) {
+	} else if (strategyContext->movingViaMidfieldCamera) {
 		// Move for 1 second towards home using the midfield camera.
 		publishCurrentStragety(strategyMovingTowardsHomeViaMidfieldCamera);
 		cmdVelPub.publish(strategyContext->cmdVel);
@@ -300,9 +300,9 @@ KaimiStrategyFn::RESULT_T GoHome::tick(StrategyContext* strategyContext) {
 	} else {
 		// Home is not visible.
 		publishCurrentStragety(strategyNoHomeSeen);
-		strategyContext->cmdVel.linear.x = 0.2;
-		strategyContext->cmdVel.angular.z = 0.0;
-		cmdVelPub.publish(strategyContext->cmdVel);
+		// strategyContext->cmdVel.linear.x = 0.2;
+		// strategyContext->cmdVel.angular.z = 0.0;
+		// cmdVelPub.publish(strategyContext->cmdVel);
 
 		// ##### TODO Move forward blindly.
 		// ##### TODO If was previously visible, try to find it again.
