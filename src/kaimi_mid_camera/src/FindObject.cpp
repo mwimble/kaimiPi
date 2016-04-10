@@ -43,7 +43,7 @@ void FindObject::imageCb(Mat& image) {
     //ROS_INFO("FindObject::imageCb] image.rows: %d, image.cols: %d", image.rows, image.cols);
     if (1 /*image.rows > 60 && image.cols > 60*/) {
     	Mat imgHSV;
-		cvtColor(image, imgHSV, COLOR_BGR2HSV); // Convert the captured frame from BGR to HSV
+		cvtColor(image, imgHSV, CV_BGR2HSV); // Convert the captured frame from BGR to HSV
 
 		Mat imgThresholded;
 		inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
@@ -134,11 +134,11 @@ void FindObject::imageCb(Mat& image) {
 
 FindObject::FindObject() : it_(nh_),
 	iLowH(111),
-	iHighH(166),
-	iLowS(20),
-	iHighS(180),
-	iLowV(15),
-	iHighV(180),
+	iHighH(150),
+	iLowS(10),
+	iHighS(210),
+	iLowV(20),
+	iHighV(170),
 	contourSizeThreshold(100),
 	showWindows_(false)
 	{
@@ -175,7 +175,7 @@ FindObject::FindObject() : it_(nh_),
 	}
 
     int fps;
-    nh_.param("fps", fps, 10);
+    nh_.param("fps", fps, 20);
     std::string color_mode = "rgb8";
 
     //image_transport::ImageTransport it(nh);

@@ -8,6 +8,7 @@
 #include "KaimiMidField.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
+#include "StrategyContext.h"
 
 class FetchPrecachedSample : public KaimiStrategyFn {
 private:
@@ -21,6 +22,15 @@ private:
 	static const string strategyTurning180;
 	static const string strategyWaitingForPauseOff;
 	static const string strategyWaitingForPauseOn;
+	static const string stragetyWaitingOnArm;
+
+	static const int GRIPPER_READ_PIN;		// Using Broadcom pin number 17
+	static const int GRIPPER_WRITE_PIN;		// Using Broadcom pin number 18
+
+	static StrategyContext& strategyContext;
+
+	int gripperReadHandle;	// Used to see if gripper is done.
+	int gripperWriteHandle;	// Used to tell gripper to do its thing.
 
 	// For sending robot movement commands.
 	geometry_msgs::Twist cmdVel;
@@ -47,6 +57,9 @@ private:
 	// To help log strategy only when it changes.
 	string lastReportedStrategy;
 
+	// Used to prevent a slew of "No target seen" messages;
+	bool reportedNoFound;
+
 	// Publish current strategy (if changed).
 	void publishCurrentStragety(string strategy);
 
@@ -56,7 +69,7 @@ private:
 	FetchPrecachedSample& operator=(FetchPrecachedSample const&) {}
 
 public:
-	RESULT_T tick(StrategyContext* strategyContext);
+	RESULT_T tick();
 
 	string name();
 

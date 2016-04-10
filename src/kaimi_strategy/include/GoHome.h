@@ -8,6 +8,7 @@
 #include "KaimiMidField.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
+#include "StrategyContext.h"
 
 class GoHome : public KaimiStrategyFn {
 private:
@@ -18,6 +19,8 @@ private:
 	static const string strategyNoHomeSeen;
 	static const string strategySuccess;
 	static const string strategyTurning180;
+
+	static StrategyContext& strategyContext;
 
 	// For sending robot movement commands.
 	geometry_msgs::Twist cmdVel;
@@ -34,6 +37,9 @@ private:
 	// To help log strategy only when it changes.
 	string lastReportedStrategy;
 
+	// Used to prevent a slew of "No target seen" messages;
+	bool reportedNoFound;
+
 	// Publish current strategy (if changed).
 	void publishCurrentStragety(string strategy);
 
@@ -43,7 +49,7 @@ private:
 	GoHome& operator=(GoHome const&) {}
 
 public:
-	RESULT_T tick(StrategyContext* strategyContext);
+	RESULT_T tick();
 
 	string name();
 

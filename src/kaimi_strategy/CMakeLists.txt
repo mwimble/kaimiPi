@@ -153,6 +153,8 @@ add_executable(
   src/KaimiMidField.cpp
   src/KaimiNearField.cpp
   src/KaimiStrategyFn.cpp
+  src/Motion.cpp
+  src/StrategyContext.cpp
 )
 
 ## Add cmake target dependencies of the executable
@@ -161,7 +163,9 @@ add_dependencies(
 	kaimi_strategy_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(kaimi_strategy_node
+target_link_libraries(
+  kaimi_strategy_node
+  wiringPi
   ${catkin_LIBRARIES}
 )
 

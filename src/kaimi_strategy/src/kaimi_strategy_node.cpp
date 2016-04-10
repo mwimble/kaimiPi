@@ -8,6 +8,7 @@
 #include "KaimiMidField.h"
 #include "KaimiNearField.h"
 #include "KaimiStrategyFn.h"
+#include "Motion.h"
 #include "StrategyContext.h"
 #include "StrategyException.h"
 
@@ -24,17 +25,19 @@ vector<KaimiStrategyFn*> behaviors;
 
 int main(int argc, char** argv) {
 	ros::init(argc, argv, "kaimi_strategy_node");
-	KaimiNearField& kaimiNearField = KaimiNearField::Singleton();
-	KaimiMidField& kaimiMidField = KaimiMidField::Singleton();
 	KaimiImu& kaimiImu = KaimiImu::Singleton();
+	KaimiMidField& kaimiMidField = KaimiMidField::Singleton();
+	KaimiNearField& kaimiNearField = KaimiNearField::Singleton();
+	Motion& motion = Motion::Singleton();
+	StrategyContext& strategyContext = StrategyContext::Singleton();
 
-	ros::Rate rate(20); // Loop rate
+	ros::Rate rate(40); // Loop rate
 
-	StrategyContext* strategyContext = new StrategyContext();
-	strategyContext->lookingForPrecachedSample = true;
 	behaviors.push_back(&IsHealthy::Singleton());
 	behaviors.push_back(&FetchPrecachedSample::Singleton());
 	behaviors.push_back(&GoHome::Singleton());
+
+	strategyContext.lookingForPrecachedSample = true;
 
 	while (ros::ok()) {
 		try { // Emplement Sequence behavior
@@ -43,7 +46,8 @@ int main(int argc, char** argv) {
 
 			//ROS_INFO_STREAM("--- ---- ---- ---- Begin of strategy loop ---- ---- ---- ----");
 			for(vector<KaimiStrategyFn*>::iterator it = behaviors.begin(); it != behaviors.end(); ++it) {
-				KaimiStrategyFn::RESULT_T result = ((*it)->tick)(strategyContext);
+				KaimiStrategyFn::RESULT_T result = ((*it)->tick)();
+				//ROS_INFO_STREAM("[kaimi_strategy_node] called tick for '" << ((*it)->name()) << " with result: " << result);
 				if (result == KaimiStrategyFn::RESTART_LOOP) {
 					//ROS_INFO_STREAM("[kaimi_strategy_node] function: " << ((*it)->name()) << ", RESTART_LOOP result, restarting");
 					throw new StrategyException("RESTART_LOOP");

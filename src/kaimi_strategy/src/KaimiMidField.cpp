@@ -19,12 +19,12 @@ static void * KaimiMidFieldFindObjectTimerRoutine(const boost::system::error_cod
 	ptime now = microsec_clock::local_time();
 	time_duration timeSinceLastFound = now - KaimiMidField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
-	if (millisecondsSinceLastReport > 500) {
+	if (millisecondsSinceLastReport > 100) {
 		//ROS_INFO("[KaimiMidFieldFindObjectTimerRoutine] no object found in last 500 ms");
 		KaimiMidField::Singleton().setNotFound();
 	}
 
-	KaimiMidFieldDeadlineTimer_.expires_at(KaimiMidFieldDeadlineTimer_.expires_at() + milliseconds(500));
+	KaimiMidFieldDeadlineTimer_.expires_at(KaimiMidFieldDeadlineTimer_.expires_at() + milliseconds(100));
 	KaimiMidFieldDeadlineTimer_.async_wait(KaimiMidFieldFindObjectTimerRoutine);
 }
 
