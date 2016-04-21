@@ -1,0 +1,12 @@
+<launch>
+	<arg name="doDebug" default="false" />
+	<arg if="$(arg doDebug)" name="launchPrefix" value="xterm -e gdb -args" />
+	<arg unless="$(arg doDebug)" name="launchPrefix" value="" />
+	<arg name="image_topic_name" default="/kaimi_mid_camera_publisher/image_raw" doc="Camera topic name to publish" />
+	<arg name="fps" default="10" doc="Frames per second to publish" />
+	<node pkg="kaimi_mid_camera_publisher" name="kaimi_mid_camera_publisher" type="kaimi_mid_camera_publisher_node" respawn="false" output="screen" launch-prefix="$(arg launchPrefix)" >
+		<param name="image_topic_name" value="$(arg image_topic_name)" type="str" />"
+		<param name="fps" value="$(arg fps)" type="int" />
+	</node>
+
+</launch>
