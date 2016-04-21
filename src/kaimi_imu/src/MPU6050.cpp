@@ -34,6 +34,7 @@ THE SOFTWARE.
 ===============================================
 */
 
+#include <ros/ros.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -2996,7 +2997,10 @@ bool MPU6050::writeMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t b
             progBuffer = (uint8_t *)data + i;
         }
 
-        I2Cdev::writeBytes(devAddr, MPU6050_RA_MEM_R_W, chunkSize, progBuffer);
+        bool result = I2Cdev::writeBytes(devAddr, MPU6050_RA_MEM_R_W, chunkSize, progBuffer);
+        if (!result) {
+            ROS_ERROR("[MPU6050::writeMemoryBlock] error in I2Cdev::writeBytes");
+        }
 
         // verify data if needed
         if (verify && verifyBuffer) {
@@ -3045,7 +3049,11 @@ bool MPU6050::writeMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t b
     return true;
 }
 bool MPU6050::writeProgMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, bool verify) {
-    return writeMemoryBlock(data, dataSize, bank, address, verify, true);
+    bool result = writeMemoryBlock(data, dataSize, bank, address, verify, true);
+    if (!result) {
+        ROS_ERROR("[MPU6050::writeProgMemoryBlock] fail in writeMemoryBlock");
+    }
+    return result;
 }
 bool MPU6050::writeDMPConfigurationSet(const uint8_t *data, uint16_t dataSize, bool useProgMem) {
     uint8_t *progBuffer = NULL, success, special;
@@ -3084,6 +3092,9 @@ bool MPU6050::writeDMPConfigurationSet(const uint8_t *data, uint16_t dataSize, b
                 progBuffer = (uint8_t *)data + i;
             }
             success = writeMemoryBlock(progBuffer, length, bank, offset, true);
+            if (!success) {
+                ROS_ERROR("[MPU6050::writeDMPConfigurationSet] fail in writeMemoryBlock");
+            }
             i += length;
         } else {
             // special instruction

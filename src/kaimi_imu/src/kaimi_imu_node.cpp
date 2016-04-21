@@ -1,7 +1,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <sensor_msgs/Imu.h>
-
 #include "MPU6050_6Axis_MotionApps20.h"
 
 int main(int argc, char** argv) {
@@ -68,12 +67,12 @@ int main(int argc, char** argv) {
 			imu.orientation.x = q.x;
 			imu.orientation.y = q.y;
 			imu.orientation.z = q.z;
-			ROS_INFO("Quaternion w: %7.2f, x: %7.2f, y: %7.2f, z: %7.2f", q.w, q.x, q.y, q.z);
+			//ROS_INFO("Quaternion w: %7.2f, x: %7.2f, y: %7.2f, z: %7.2f", q.w, q.x, q.y, q.z);
 
-			float ypr[3];
-			mpu.dmpGetGravity(&gravity, &q);
-			mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-			ROS_INFO("ypr  %7.2f %7.2f %7.2f    ", ypr[0] * 180/M_PI, ypr[1] * 180/M_PI, ypr[2] * 180/M_PI);
+			// float ypr[3];
+			// mpu.dmpGetGravity(&gravity, &q);
+			// mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+			//ROS_INFO("ypr  %7.2f %7.2f %7.2f    ", ypr[0] * 180/M_PI, ypr[1] * 180/M_PI, ypr[2] * 180/M_PI);
 
 			mpu.dmpGetAccel(&aa, fifoBuffer);
 			mpu.dmpGetGravity(&gravity, &q);
@@ -86,7 +85,7 @@ int main(int argc, char** argv) {
 			imu.angular_velocity.x = gyro[0] * 25.0;
 			imu.angular_velocity.y = gyro[1] * 25.0;
 			imu.angular_velocity.z = gyro[2] * 25.0;
-			ROS_INFO("gyro x: %d, y: %d, z: %d -- %f, %f, %f", gyro[0], gyro[1], gyro[2], imu.angular_velocity.x, imu.angular_velocity.y, imu.angular_velocity.z);
+			//ROS_INFO("gyro x: %d, y: %d, z: %d -- %f, %f, %f", gyro[0], gyro[1], gyro[2], imu.angular_velocity.x, imu.angular_velocity.y, imu.angular_velocity.z);
 			imuPub.publish(imu);
 		}
 	}

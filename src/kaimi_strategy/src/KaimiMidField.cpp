@@ -19,12 +19,12 @@ static void * KaimiMidFieldFindObjectTimerRoutine(const boost::system::error_cod
 	ptime now = microsec_clock::local_time();
 	time_duration timeSinceLastFound = now - KaimiMidField::Singleton().lastTimeFound();
 	long millisecondsSinceLastReport = (long) timeSinceLastFound.total_milliseconds();
-	if (millisecondsSinceLastReport > 500) {
-		ROS_INFO("[KaimiMidFieldFindObjectTimerRoutine] no object found in last 500 ms");
+	if (millisecondsSinceLastReport > 100) {
+		//ROS_INFO("[KaimiMidFieldFindObjectTimerRoutine] no object found in last 500 ms");
 		KaimiMidField::Singleton().setNotFound();
 	}
 
-	KaimiMidFieldDeadlineTimer_.expires_at(KaimiMidFieldDeadlineTimer_.expires_at() + milliseconds(500));
+	KaimiMidFieldDeadlineTimer_.expires_at(KaimiMidFieldDeadlineTimer_.expires_at() + milliseconds(100));
 	KaimiMidFieldDeadlineTimer_.async_wait(KaimiMidFieldFindObjectTimerRoutine);
 }
 
@@ -53,7 +53,7 @@ void* kaimiMidFieldHeartBeatFunction(void* singleton) {
 
 void KaimiMidField::topicCb(const std_msgs::String& msg) {
 	// MidCamera:found;X:313.49;Y:408.196;AREA:3201;I:0;ROWS:480;COLS:640
-	ROS_INFO("[KaimiMidField::topicCb] Message: %s", msg.data.c_str());
+	//ROS_INFO("[KaimiMidField::topicCb] Message: %s", msg.data.c_str());
 	
 	char localStr[strlen(msg.data.c_str()) + 1];
 	strcpy(localStr, msg.data.c_str());

@@ -11,7 +11,7 @@ private:
 	IsHealthy& operator=(IsHealthy const&) {}
 
 public:
-	RESULT_T tick(StrategyContext* strategyContext);
+	RESULT_T tick();
 
 	string name();
 

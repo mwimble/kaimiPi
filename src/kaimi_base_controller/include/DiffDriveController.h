@@ -3,6 +3,7 @@
 
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <std_msgs/String.h>
 
 #include <boost/asio.hpp>
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -25,6 +26,9 @@ private:
 	static const int MCP4726_CMD_WRITEDAC = (0x40);  // Writes data to the DAC
 	static const int MCP4726_CMD_WRITEDACEEPROM = (0x60);  // Writes data to the DAC and the EEPROM (persisting the assigned value after reset)
 	static const unsigned int STOP_VALUE = 2048;
+
+	static std_msgs::String pausedMsg;
+	static std_msgs::String notPausedMsg;
 
 	static float WHEEL_SEPARATION;
     static float WHEEL_RADIUS;
@@ -56,6 +60,9 @@ private:
 	ros::NodeHandle nh_;
 	ros::Subscriber sub_command_;
 
+	// Topic to publish current pause state.
+	ros::Publisher pausePub;
+
 	void cmdVelCallback(const geometry_msgs::Twist& commandMessage);
 
 	void commandExecutionDoWork();
@@ -64,6 +71,8 @@ private:
 	void commandTimeoutHandler();
 	boost::thread* commandTimeoutThread;
 
+	void emptyCache();
+	
 	// Set voltage via a DAC.
 	// Input:
 	//		fd 		Handle to DAC.
