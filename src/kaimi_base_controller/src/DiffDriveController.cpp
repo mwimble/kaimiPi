@@ -12,9 +12,12 @@ DiffDriveController::DiffDriveController() :
 	printedQueueTooBig_(false),
 	queueLength_(0) {
 	debugStreamName_ = "DiffDriveController";
+	pausedMsg.data = "paused";
+	notPausedMsg.data = "NOTpaused";
 	
 	wiringPiSetupSys();
 	pinMode(PAUSE_PIN, INPUT);
+	// pullUpDnControl(PAUSE_PIN, PUD_UP); // Must be done via `gpio export 12 up`
 	fbHandle_ = wiringPiI2CSetup(MCP4725_FB_ADDR);
 	lrHandle_ = wiringPiI2CSetup(MCP4725_LR_ADDR);
 
@@ -24,6 +27,7 @@ DiffDriveController::DiffDriveController() :
 	setVoltage(lrHandle_, STOP_VALUE, true);
 	
 	sub_command_ = nh_.subscribe("cmd_vel", 6, &DiffDriveController::cmdVelCallback, this);
+	pausePub = nh_.advertise<std_msgs::String>("basePaused", 1, true /* latched */);
 	commandTimeoutThread = new boost::thread(boost::bind(&DiffDriveController::commandTimeoutHandler, this));
 	commandExecutionThread = new boost::thread(boost::bind(&DiffDriveController::commandExecutionDoWork, this));
 }
@@ -44,7 +48,7 @@ void DiffDriveController::commandTimeoutHandler() {
 
 		if (duration.total_milliseconds() > 200) {
 			if (!isStopped) { //#####
-				ROS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
+				//OS_INFO_STREAM("[DiffDriveController::commandTimeoutHandler] timeout, stopping");
 				stop();
 				isStopped = true;
 			}
@@ -56,30 +60,29 @@ void DiffDriveController::commandTimeoutHandler() {
 	stop();
 }
 
+void DiffDriveController::emptyCache() {
+	while (!commandQueue_.empty()) {
+		Command command;
+		commandQueue_.pop(command);
+		queueLength_--;
+	}
+}
+
 void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMessage) {
 	if (ros::ok()) {
 		if (paused()) {
+			pausePub.publish(pausedMsg);
 			if (!printedPaused_) {
-				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] Robot paused, command dropped");
+				emptyCache();
+				stop();
+				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] Robot paused, all commands dropped");
 				printedPaused_ = true;
 			}
-		// } else if (queueLength_ > 5) {
-		// 	printedPaused_ = false;
-		// 	if (!printedQueueTooBig_) {
-		// 		ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] queue too big ("
-		// 			<< queueLength_
-		// 			<< "), ignoring new command");
-		// 	}
-
-		// 	printedQueueTooBig_ = true;
 		} else {
+			pausePub.publish(notPausedMsg);
 			if (queueLength_ > 5) {
 				ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] queue too big, emptying");
-				while (!commandQueue_.empty()) {
-					Command command;
-					commandQueue_.pop(command);
-					queueLength_--;
-				}
+				emptyCache();
 			}
 
 			printedPaused_ = false;
@@ -88,11 +91,11 @@ void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMess
 			command.angular  = commandMessage.angular.z;
 			command.linear = commandMessage.linear.x;
 			command.timeNsec = microsec_clock::local_time();
-			ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] New Command"
-				<< ", linear: " << command.linear
-				<< ", angular: " << command.angular
-				<< ", timeNsec: " << to_simple_string(command.timeNsec)
-				<< ", queue length will be: " << (queueLength_ + 1));
+			// ROS_INFO_STREAM("[DiffDriveController::cmdVelCallback] New Command"
+			// 	<< ", linear: " << command.linear
+			// 	<< ", angular: " << command.angular
+			// 	<< ", timeNsec: " << to_simple_string(command.timeNsec)
+			// 	<< ", queue length will be: " << (queueLength_ + 1));
 			if (!commandQueue_.push(command)) {
 				ROS_ERROR("[DiffDriveController::cmdVelCallback] UNABLE TO PUSH COMMAND");
 			} else {
@@ -110,11 +113,15 @@ void DiffDriveController::commandExecutionDoWork() {
 	bool printedPaused = false; // To meter pause messages to log.
 	while (ros::ok()) {
 		if (paused()) {
+			pausePub.publish(pausedMsg);
 			if (!printedPaused) {
+				stop();
+				emptyCache();
 				ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] Robot paused, no command dequeued");
 				printedPaused = true;
 			}
 		} else {
+			pausePub.publish(notPausedMsg);
 			printedPaused = false;
 			if (!commandQueue_.empty()) {
 				Command command;
@@ -122,6 +129,9 @@ void DiffDriveController::commandExecutionDoWork() {
 					queueLength_--;
 					float ws = WHEEL_SEPARATION * WHEEL_SEPARATION_MULTIPLIER;
 					float wr = WHEEL_RADIUS * WHEEL_RADIUS_MULTIPLIER;
+
+					//##### Fix apparent l/r bias.
+					//command.angular -= 0.05;
 
 					bool truncatedX = false;
 					bool truncatedZ = false;
@@ -148,14 +158,14 @@ void DiffDriveController::commandExecutionDoWork() {
 					float lr =  ((-command.angular * 1228) + 2034);
 					float fb = ((command.linear * 1228) + 2034);
 
-					ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] deque command. "
-						<< "linear: " << command.linear
-						<< ", angular: " << command.angular
-						<< ", timeNsec: " << to_simple_string(command.timeNsec)
-						<< ", queue now empty: " << (commandQueue_.empty() ? "TRUE" : "false")
-						<< ", queue length: " << queueLength_
-						<< ", lr: " << lr
-						<< ", fb: " << fb);
+					// ROS_INFO_STREAM("[DiffDriveController::commandExecutionDoWork] deque command. "
+					// 	<< "linear: " << command.linear
+					// 	<< ", angular: " << command.angular
+					// 	<< ", timeNsec: " << to_simple_string(command.timeNsec)
+					// 	<< ", queue now empty: " << (commandQueue_.empty() ? "TRUE" : "false")
+					// 	<< ", queue length: " << queueLength_
+					// 	<< ", lr: " << lr
+					// 	<< ", fb: " << fb);
 					setVoltage(fbHandle_, fb, false);
 					setVoltage(lrHandle_, lr, false);
 
@@ -216,3 +226,5 @@ float DiffDriveController::WHEEL_RADIUS = 0.1651; // 6.5"
 float DiffDriveController::WHEEL_SEPARATION_MULTIPLIER = 1.0;
 float DiffDriveController::WHEEL_RADIUS_MULTIPLIER = 1.0;
 
+std_msgs::String DiffDriveController::pausedMsg;
+std_msgs::String DiffDriveController::notPausedMsg;

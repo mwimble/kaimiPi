@@ -14,9 +14,8 @@ string IsHealthy::name() {
 	return string("IsHealthy");
 }
 
-KaimiStrategyFn::RESULT_T IsHealthy::tick(StrategyContext* strategyContext) {
+KaimiStrategyFn::RESULT_T IsHealthy::tick() {
 	RESULT_T result = SUCCESS;
-	ROS_INFO_STREAM("[IsHealthy.tick] result: " << resultToString(result));
 	return result;
 }
 
