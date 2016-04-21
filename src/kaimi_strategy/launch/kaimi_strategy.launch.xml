@@ -1,54 +1,44 @@
 <launch>
-	<arg name="doDebug" default="false" />
-	<arg if="$(arg doDebug)" name="launchPrefix" value="xterm -e gdb -args" />
-	<arg unless="$(arg doDebug)" name="launchPrefix" value="" />
-
 	<arg name="debug" default="false" />
 	<arg if="$(arg debug)" name="launch_prefix" value="xterm -e gdb --args" />
 	<arg unless="$(arg debug)" name="launch_prefix" value="" />
 
 	<arg name="show_windows" default="false" doc="true => show X-window panes" />
-	<arg name="mid_image_topic_name" default="/rosberrypi_cam/image_raw" doc="camera topic name" />
-
-	<!-- Handles cmd_vel message, monitors pause switch -->
-	<node pkg="kaimi_base_controller" name="setup_wiring" type="setupWiring.sh" />
-	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="true" output="screen" launch-prefix="$(arg launchPrefix)" >
-	</node>
 
 	<machine name="jetsonEth"
-		address="10.10.10.2"
+		address="jetsonEth"
 		user="ubuntu"
-		env-loader="/home/ubuntu/catkin_ws/env.sh"
-        ssh-port="22"
-        timeout="20">
-    </machine>
-
-    <!-- local camera image message poster -->
-	<!--node pkg="rosberrypi_cam" name="rosberrypi_cam" type="rosberrypi_cam_node" respawn="true" output="screen" >
-	</node-->
+		env-loader="/home/ubuntu/catkin_ws/devel/env.sh"
+	        ssh-port="22"
+        	timeout="20">
+	</machine>
 
 	<node pkg="kaimi_imu" name="kaimi_imu" type="kaimi_imu_node" respawn="true" output="screen" >
 	</node>
 
-	<node pkg="kaimi_mid_camera" name="kaimi_mid_camera" type="kaimi_mid_camera_node" respawn="true" output="screen" >
+	<!--node pkg="kaimi_mid_camera" name="kaimi_mid_camera" type="kaimi_mid_camera_node" respawn="true" output="screen" >
 		<param name="show_windows" value="$(arg show_windows)" type="bool" />
 		<param name="image_topic_name" value="$(arg mid_image_topic_name)" type="str" />"
-	</node>
+	</node-->
 
 	<!-- Run strategy. -->	
 	<!--node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" respawn="true" output="screen" -->
-	<node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" output="screen" launch-prefix="$(arg launch_prefix)" >
+	<node pkg="kaimi_strategy" name="kaimi_strategy" type="kaimi_strategy_node" respawn="true" output="screen" >
 	</node>
 
 	<!-- Launch required nodes on JetsonEth to support kinect. -->
-    <include
-	     file="$(find kaimi_strategy)launch/freenect.launch.xml">
-      <arg name="machine" value="jetsonEth" />
+    	<include file="$(find kaimi_strategy)launch/freenect.launch.xml">
+		<arg name="machine" value="jetsonEth" />
 	</include>
 
 	<!-- Launch on JetsonEth node to run kinect camera. -->
 	<node machine="jetsonEth" pkg="kaimi_near_camera" name="kaimi_near_camera" type="kaimi_near_camera_node" respawn="true"	>
 		<param name="show_windows" value="false" />
+	</node>
+
+	<!-- Handles cmd_vel message, monitors pause switch -->
+	<node pkg="kaimi_base_controller" name="setup_wiring" type="setupWiring.sh" />
+	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="true" output="screen" >
 	</node>
 
 </launch>
