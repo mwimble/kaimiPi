@@ -1,0 +1,31 @@
+<launch>
+	<arg name="debug" default="false" />
+	<arg if="$(arg debug)" name="launch_prefix" value="xterm -e gdb --args" />
+	<arg unless="$(arg debug)" name="launch_prefix" value="" />
+
+	<arg name="show_windows" default="false" doc="true => show X-window panes" />
+	<arg name="mid_image_topic_name" default="midSampleFound" doc="Topic name for publishing mid-field camera raw image" />
+
+	<machine name="jetsonEth"
+		address="jetsonEth"
+		user="ubuntu"
+		env-loader="/home/ubuntu/catkin_ws/devel/env.sh"
+	        ssh-port="22"
+        	timeout="20">
+	</machine>
+
+	<machine name="pi3bEth"
+		address="pi3bEth"
+		user="pi"
+		env-loader="/home/pi/catkin_ws/devel/env.sh"
+		ssh-port="22"
+		timeout="20">
+	</machine>
+
+    <node machine="jetsonEth" pkg="kaimi_mid_camera" name="kaimi_mid_camera_node" type="kaimi_mid_camera_node" output="screen" >
+            <param name="show_windows" value="$(arg show_windows)" type="bool" />
+            <!--param name="mid_image_topic_name" value="$(arg mid_image_topic_name)" type="str" /-->
+            <param name="mid_image_topic_name" value="foo_topic" type="str" />
+    </node>
+
+</launch>

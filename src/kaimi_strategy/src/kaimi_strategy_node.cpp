@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
 	ros::Rate rate(40); // Loop rate
 
-	behaviors.push_back(&IsHealthy::Singleton());
+	//#####behaviors.push_back(&IsHealthy::Singleton());
 	behaviors.push_back(&FetchPrecachedSample::Singleton());
 	behaviors.push_back(&GoHome::Singleton());
 

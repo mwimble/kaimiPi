@@ -46,6 +46,7 @@ void Motion::seekViaMidfield(float& xDelta, float& yDelta) {
 	xDelta = abs(x - MID_FIELD_DESIRED_X);
 	yDelta = abs(y - MID_FIELD_DESIRED_Y);
 
+	/*
 	ROS_INFO_STREAM("[Motion::seekViaMidfield] MIDField Need to move towards sample, x:"
 			<< x
 			<< ", y: "
@@ -68,6 +69,7 @@ void Motion::seekViaMidfield(float& xDelta, float& yDelta) {
 			<< Motion::MID_FIELD_DESIRED_Y_TOLERANCE
 			<< ", xSlewCorrection: "
 			<< xSlewCorrection);
+*/
 }
 
 void Motion::seekViaNearfield(float& xDelta, float& yDelta) {
@@ -107,7 +109,7 @@ void Motion::seekViaNearfield(float& xDelta, float& yDelta) {
 
 	xDelta = abs(x - NEAR_FIELD_DESIRED_X);
 	yDelta = abs(y - NEAR_FIELD_DESIRED_Y);
-
+	/*
 	ROS_INFO_STREAM("[Motion::seekViaNearfield] NearField Need to move towards sample, x:"
 			<< x
 			<< ", y: "
@@ -130,4 +132,5 @@ void Motion::seekViaNearfield(float& xDelta, float& yDelta) {
 			<< Motion::NEAR_FIELD_DESIRED_Y_TOLERANCE
 			<< ", xSlewCorrection: "
 			<< xSlewCorrection);
+*/
 }
