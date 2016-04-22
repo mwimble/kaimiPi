@@ -23,19 +23,25 @@ extern FindObject* findObject;
 
 FindObject::FindObject() : it_(nh_)	{
 //	dynamicConfigurationServer.setCallback(f);
+    int fps;
 
-	ros::param::get("~image_topic_name", imageTopicName_);
+	if (!ros::param::get("~mid_image_topic_name", imageTopicName_)) {
+		ROS_ERROR("FindObject::FindObject missing ~mid_image_topic_name parameter");
+	}
+
+	if (!ros::param::get("~mid_image_fps", fps)) {
+		ROS_ERROR("FindObject::FindObject missing ~mid_image_fps parameter");
+	}
+
 	ROS_INFO("PARAM image_topic_name: %s", imageTopicName_.c_str());
+	ROS_INFO("PARAM fps: %d", fps);
 
 	image_pub_ = it_.advertise(imageTopicName_, 4);
 
 	std::string camera_name = "midfield_camera";
 	camera_info_manager::CameraInfoManager cinfo_(nh_, camera_name);
 
-    int fps;
-	ros::param::get("~fps", fps);
-    //nh_.param("fps", fps, 10);
-    std::string color_mode = "BGR8";
+   std::string color_mode = "BGR8";
 
     //image_transport::ImageTransport it(nh);
     // std::string camera_name = nh.getNamespace();
