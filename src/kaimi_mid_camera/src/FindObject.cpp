@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <ctime>
+#include <cstdio>
+
 #include "/usr/local/include/raspicam/raspicam_cv.h"
 #include <camera_info_manager/camera_info_manager.h>
 
@@ -22,39 +25,36 @@ using namespace std;
 
 extern FindObject* findObject;
 
-//void FindObject::configurationCallback(kaimi_mid_camera::kaimi_mid_camera_paramsConfig &config, uint32_t level) {
-//	ROS_INFO("Reconfigure Request hue_low: %d, hue_high: %d, saturation_low: %d, saturation high: %d, value_low: %d, value_high: %d, contourSizeThreshold: %d",
-//	         config.hue_low, config.hue_low,
-//	         config.saturation_low, config.saturation_high,
-//	         config.value_low, config.value_high,
-//	         config.contourSizeThreshold);
-//	if (findObject) {
-//		findObject->iLowH = config.hue_low;
-//		findObject->iHighH = config.hue_high;
-//		findObject->iLowS = config.saturation_low;
-//		findObject->iHighS = config.saturation_high;
-//		findObject->iLowV = config.value_low;
-//		findObject->iHighV = config.value_high;
-//		findObject->contourSizeThreshold = config.contourSizeThreshold;
-//	}
-//}
+#define TIME_STEPS 0
 
 void FindObject::imageCb(Mat& image) {
+	clock_t start;
+	double durationCvtColor = 0;
+	double durationInRange = 0;
+	double durationErode1 = 0;
+	double durationDilate1 = 0;
+	double durationErode2 = 0;
+	double durationDilate2 = 0;
+	double durationCopyTo = 0;
+	double durationFindLargest = 0;
+	double durationShowWIndows = 0;
+	double durationFindContours = 0;
+	double durationContoursPoly = 0;
+
     //ROS_INFO("FindObject::imageCb] image.rows: %d, image.cols: %d", image.rows, image.cols);
     if (1 /*image.rows > 60 && image.cols > 60*/) {
     	Mat imgHSV;
+    	if (TIME_STEPS) start = clock();
 		cvtColor(image, imgHSV, CV_BGR2HSV); // Convert the captured frame from BGR to HSV
+		if (TIME_STEPS) durationCvtColor = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+
 
 		Mat imgThresholded;
+    	if (TIME_STEPS) start = clock();
 		inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
+		if (TIME_STEPS) durationInRange = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
 
-		//morphological opening (remove small objects from the foreground)
-		erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
-		dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
-		//morphological closing (fill small holes in the foreground)
-		dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
-		erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
 
 		vector<vector<Point> > contours;
@@ -62,14 +62,25 @@ void FindObject::imageCb(Mat& image) {
 		double contourSize;
 		Mat tempImage;
 
+    	if (TIME_STEPS) start = clock();
 		imgThresholded.copyTo(tempImage);
+		durationCopyTo = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+
+    	if (TIME_STEPS) start = clock();
 		findContours(tempImage, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+		durationFindContours = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+
+    	if (TIME_STEPS) start = clock();
 		vector<Rect> boundRect( contours.size() );
 		vector<vector<Point> > contours_poly( contours.size() );
+		durationContoursPoly = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+
 		//ROS_INFO("Thresholded iLowH: %d, iHighH: %d, iLowS: %d, iHighS: %d, iLowV: %d, iHighV: %d, countours: %d", iLowH, iHighH, iLowS, iHighS, iLowV, iHighV, contours.size());
 		Point2f center;
+		ROS_INFO("Found %d contours", contours.size());
 		float radius;
 
+    	if (TIME_STEPS) start = clock();
 		if (!contours.empty()) {
 			// Find largest blob.
 			size_t maxBlobIndex = -1;
@@ -110,6 +121,7 @@ void FindObject::imageCb(Mat& image) {
 				midSampleFoundPub_.publish(message);
 				ROS_INFO("[FindObject::imageCb] FOUND at x: %7.2f, y: %7.2f, area: %d", x, y, maxBlobSize);
 			}
+			durationFindLargest = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
 		} else {
 			stringstream msg;
 			msg << "MidCamera:NotFound;X:0;Y:0;AREA:0;I:0;ROWS:"
@@ -119,46 +131,58 @@ void FindObject::imageCb(Mat& image) {
 			message.data = msg.str();
 			midSampleFoundPub_.publish(message);
 			ROS_INFO("[FindObject::imageCb] NOT FOUND");
+			durationFindLargest = 0;
 		}
 
+		if (TIME_STEPS) start = clock();
 		if (showWindows_) {
 			imshow("[kaimi_mid_camera] Raw Image", image); //show the original image
 			imshow("[kaimi_mid_camera] Thresholded Image", imgThresholded); //show the thresholded image
-			ROS_INFO("[FindObject::imageCb] showed images");
+			// ROS_INFO("[FindObject::imageCb] showed images");
 			cv::waitKey(25);
 		}
-
+		durationShowWIndows = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+		if (TIME_STEPS) ROS_INFO("durations cvtColor: %7.5f, inRange: %7.5f, erode1: %7.5f, dilate1: %7.5f, dilate2: %7.5f, erode2: %7.5f, findLargest: %7.5f, showWindows: %7.5f, copyTo: %7.5f, findContours: %7.5f, contoursPoly: %7.5f",
+			durationCvtColor,
+			durationInRange,
+			durationErode1,
+			durationDilate1,
+			durationDilate2,
+			durationErode2,
+			durationFindLargest,
+			durationShowWIndows,
+			durationCopyTo,
+			durationFindContours,durationContoursPoly);
     }
 }
 
 
 FindObject::FindObject() : it_(nh_),
-	iLowH(111),
-	iHighH(150),
-	iLowS(10),
-	iHighS(210),
-	iLowV(20),
-	iHighV(170),
-	contourSizeThreshold(100),
-	showWindows_(false)
-	{
+	iLowH(101),
+	iHighH(159),
+	iLowS(124),
+	iHighS(255),
+	iLowV(13),
+	iHighV(70),
+	contourSizeThreshold(500),
+	showWindows_(false) {
 //	f = boost::bind(&FindObject::configurationCallback, _1, _2);
 //	dynamicConfigurationServer.setCallback(f);
 
-	nh_.param<std::string>("image_topic_name", imageTopicName_, "/rosberrypi_cam/image_raw");
-	nh_.param<bool>("show_windows", showWindows_, true);
+	ros::param::get("~image_topic_name", imageTopicName_);
+	ros::param::get("~show_windows", showWindows_);
 	ROS_INFO("PARAM image_topic_name: %s", imageTopicName_.c_str());
 	ROS_INFO("PARAM show_windows: %d", showWindows_);
 	ROS_INFO("[KaimiMidCamera iLowH: %d, iHighH: %d, iLowS: %d, iHighS: %d, iLowV: %d, iHighV: %d", iLowH, iHighH, iLowS, iHighS, iLowV, iHighV);
 
-	showWindows_ = false;
+	//showWindows_ = false;
 
 	midSampleFoundPub_ = nh_.advertise<std_msgs::String>("midSampleFound", 2);
 	if (showWindows_) {
 		static const char* controlWindowName = "[kaimi_mid_camera] Control";
 
-    	namedWindow("[kaimi_mid_camera] Raw Image", CV_WINDOW_AUTOSIZE);
-    	namedWindow("[kaimi_mid_camera] Thresholded Image", CV_WINDOW_AUTOSIZE);
+    	namedWindow("[kaimi_mid_camera] Raw Image", WINDOW_NORMAL);
+    	namedWindow("[kaimi_mid_camera] Thresholded Image", WINDOW_NORMAL);
 
 		// Create trackbars in "Control" window
 		namedWindow(controlWindowName, CV_WINDOW_AUTOSIZE); //create a window called "Control"
@@ -171,16 +195,15 @@ FindObject::FindObject() : it_(nh_),
 		cvCreateTrackbar("LowV", controlWindowName, &iLowV, 255); //Value (0 - 255)
 		cvCreateTrackbar("HighV", controlWindowName, &iHighV, 255);
 
-		cvCreateTrackbar("contourSizeThreshold", controlWindowName, &contourSizeThreshold, 10000);
+		cvCreateTrackbar("contourSizeThreshold", controlWindowName, &contourSizeThreshold, 2000);
 	}
 
-    int fps;
-    nh_.param("fps", fps, 20);
-    std::string color_mode = "rgb8";
+ 	std::string camera_name = "midfield_camera";
+	camera_info_manager::CameraInfoManager cinfo_(nh_, camera_name);
 
-    //image_transport::ImageTransport it(nh);
-    // std::string camera_name = nh.getNamespace();
-    // camera_info_manager::CameraInfoManager cinfo_(nh, camera_name);
+   	int fps;
+	ros::param::get("~fps", fps);
+    std::string color_mode = "BGR8";
 
     raspicam::RaspiCam_Cv cap;
     cap.open();
@@ -188,10 +211,19 @@ FindObject::FindObject() : it_(nh_),
     while(ros::ok()) {
         Mat imgOriginal;
 
-        //bool bSuccess = cap.read(imgOriginal); // read a new frame from video
+	 	clock_t start;
+		double durationGrab;
+		double durationRetrieve;
+        
+        if (TIME_STEPS) start = clock();
         cap.grab();
-        bool bSuccess = true;
+        durationGrab = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+
+        if (TIME_STEPS) start = clock();
         cap.retrieve(imgOriginal); // read a new frame from video
+		durationRetrieve = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
+
+		if (TIME_STEPS) ROS_INFO("Duration grab: %7.5f, retrieve: %7.5f", durationGrab, durationRetrieve);
 
         // std_msgs::Header header();
         // cv_bridge::CvImage imgmsg;

@@ -1,5 +1,0 @@
-<launch>
-	<node pkg="rosberrypi_cam" name="rosberrypi_cam" type="rosberrypi_cam_node" respawn="true" output="screen" >
-	</node>
-
-</launch>
