@@ -1,0 +1,24 @@
+<launch>
+	<arg name="joystick_topic_name" default="/joy" doc="Joystck topic to be translated into cmd_vel topic" />
+	<arg name="cmd_vel_message_rate" default="5" doc="cmd_vel messages per second to be sent" />
+	<arg name="enable_button" default="4" doc="Button which must be held down to enable joystick control" />
+	<arg name="boost_button" default="6" doc="Button which, when held down, boost the velocities" />
+	<arg name="x_scale" default="0.5" doc="Scale to map max +/- 1 value into reasonable x velocity" />
+	<arg name="z_scale" default="0.5" doc="Scale to map max +/- 1 value into reasonable z velocity" />
+	<arg name="turbo_scale" default="2.0" doc="Multiplier for turbo key" />
+
+
+	<node pkg="joy" name="joystick_publisher" type="joy_node" respawn="true" output="screen" >
+		<param name="dev" value="/dev/input/js1" />
+	</node>
+
+	<node pkg="kaimi_joystick" name="kaimi_joystick_controller" type="kaimi_joystick_node" respawn="true" output="screen" >
+		<param name="joystick_topic_name" value="$(arg joystick_topic_name)" type="str" />
+		<param name="cmd_vel_message_rate" value="$(arg cmd_vel_message_rate)" type="int" />
+		<param name="enable_button" value="$(arg enable_button)" type="int" />
+		<param name="boost_button" value="$(arg boost_button)" type="int" />
+		<param name="x_scale" value="$(arg x_scale)" type="double" />
+		<param name="z_scale" value="$(arg z_scale)" type="double" />
+		<param name="turbo_scale" value="$(arg turbo_scale)" type="double" />
+	</node>
+</launch>

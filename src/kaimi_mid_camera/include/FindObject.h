@@ -1,3 +1,5 @@
+#ifndef __FIND_OBJECT
+#define __FIND_OBJECT
 
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -51,3 +53,5 @@ public:
 	static FindObject& Singleton();
 
 };
+
+#endif
