@@ -9,10 +9,10 @@
 
 
 	<node pkg="joy" name="joystick_publisher" type="joy_node" respawn="true" output="screen" >
-		<param name="dev" value="/dev/input/js1" />
+		<param name="dev" value="/dev/input/js0" />
 	</node>
 
-	<node pkg="kaimi_joystick" name="kaimi_joystick_controller" type="kaimi_joystick_node" respawn="true" output="screen" >
+	<node pkg="kaimi_joystick" name="kaimi_joystick" type="kaimi_joystick_node" respawn="true" output="screen" >
 		<param name="joystick_topic_name" value="$(arg joystick_topic_name)" type="str" />
 		<param name="cmd_vel_message_rate" value="$(arg cmd_vel_message_rate)" type="int" />
 		<param name="enable_button" value="$(arg enable_button)" type="int" />
@@ -20,5 +20,10 @@
 		<param name="x_scale" value="$(arg x_scale)" type="double" />
 		<param name="z_scale" value="$(arg z_scale)" type="double" />
 		<param name="turbo_scale" value="$(arg turbo_scale)" type="double" />
+	</node>
+
+	<!-- Handles cmd_vel message, monitors pause switch -->
+	<node pkg="kaimi_base_controller" name="setup_wiring" type="setupWiring.sh" />
+	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="true" output="screen" >
 	</node>
 </launch>
