@@ -19,3 +19,10 @@ frames.pdf
 square.bag
 
 ar_track_alvar/
+
+gps_common
+gps_umd
+gpsd_client
+src/nmea_navsat_driver
+src/robot_upstart
+

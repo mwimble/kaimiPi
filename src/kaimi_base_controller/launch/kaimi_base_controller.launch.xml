@@ -3,6 +3,6 @@
 	<arg if="$(arg doDebug)" name="launchPrefix" value="xterm -e gdb -args" />
 	<arg unless="$(arg doDebug)" name="launchPrefix" value="" />
 	<node pkg="kaimi_base_controller" name="setup_wiring" type="setupWiring.sh" />
-	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="true" output="screen" launch-prefix="$(arg launchPrefix)" >
+	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="true" output="screen" launch-prefix="$(arg launchPrefix)">
 	</node>
 </launch>

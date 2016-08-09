@@ -24,6 +24,6 @@
 
 	<!-- Handles cmd_vel message, monitors pause switch -->
 	<node pkg="kaimi_base_controller" name="setup_wiring" type="setupWiring.sh" />
-	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="true" output="screen" >
+	<node pkg="kaimi_base_controller" name="kaimi_base_controller" type="kaimi_base_controller_node" respawn="false" output="screen" >
 	</node>
 </launch>

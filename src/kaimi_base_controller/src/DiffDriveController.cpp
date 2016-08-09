@@ -69,7 +69,9 @@ void DiffDriveController::emptyCache() {
 }
 
 void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMessage) {
+	ros::Rate rate(5); // Loop rate
 	if (ros::ok()) {
+		rate.sleep();
 		if (paused()) {
 			pausePub.publish(pausedMsg);
 			if (!printedPaused_) {
@@ -111,6 +113,7 @@ void DiffDriveController::cmdVelCallback(const geometry_msgs::Twist& commandMess
 
 void DiffDriveController::commandExecutionDoWork() {
 	bool printedPaused = false; // To meter pause messages to log.
+	ros::Rate rate(100); // Loop rate
 	while (ros::ok()) {
 		if (paused()) {
 			pausePub.publish(pausedMsg);
@@ -177,7 +180,7 @@ void DiffDriveController::commandExecutionDoWork() {
 				}
 			}
 
-			//usleep(100000);
+			rate.sleep();
 		}
 	}
 

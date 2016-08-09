@@ -54,6 +54,8 @@ int main(int argc, char** argv) {
 		rate.sleep();
 		ros::spinOnce();
 
+		imu.header.frame_id = "imu";
+
 		uint16_t fifoCount = mpu.getFIFOCount();
 		if (fifoCount == 1024) {
 			// Reset so we can continue cleanly.
